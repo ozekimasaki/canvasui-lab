@@ -12,7 +12,7 @@ export function Button({
   size = "md",
   variant = "solid",
   state = "default",
-  label = "Continue",
+  label = "Proceed",
   disabled,
   ...rest
 }: ButtonProps) {
