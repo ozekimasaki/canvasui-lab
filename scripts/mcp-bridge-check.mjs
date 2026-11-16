@@ -9,8 +9,16 @@ const desc = await client.callTool({ name: "canvas.describe", arguments: {} });
 const state = JSON.parse(text(desc));
 console.log("describe: cells =", state.cells?.length, "view nodes =", state.view?.length);
 
-const snap = await client.callTool({ name: "canvas.snapshot", arguments: { cellKey: "button:613c3127", scale: 1 } });
-console.log("snapshot content type:", snap.content[0].type, "base64 bytes:", snap.content[0].data?.length);
+const snap = await client.callTool({
+  name: "canvas.snapshot",
+  arguments: { cellKey: "button:613c3127", scale: 1 },
+});
+console.log(
+  "snapshot content type:",
+  snap.content[0].type,
+  "base64 bytes:",
+  snap.content[0].data?.length,
+);
 
 const vrt = await client.callTool({ name: "vrt.run", arguments: {} });
 console.log("vrt.run:", text(vrt).slice(0, 120));
