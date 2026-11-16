@@ -289,6 +289,11 @@ export function DocumentCanvas({
       return canvas.screenToWorld({ x: event.clientX - rect.left, y: event.clientY - rect.top });
     };
     const onDown = (event: PointerEvent) => {
+      // creation tools must not let the background pan controller move the
+      // camera mid-gesture, or screenToWorld freezes and drafts collapse
+      if (tool === "F" || tool === "R" || tool === "O" || tool === "T" || tool === "C") {
+        event.stopPropagation();
+      }
       if (tool === "F" || tool === "R" || tool === "O") {
         const p = toWorld(event);
         draftRef.current = { x0: p.x, y0: p.y, x1: p.x, y1: p.y };
@@ -393,13 +398,13 @@ export function DocumentCanvas({
         overrides: {},
       });
     };
-    surface.addEventListener("pointerdown", onDown);
+    surface.addEventListener("pointerdown", onDown, true);
     surface.addEventListener("pointermove", onMove);
     surface.addEventListener("pointerup", onUp);
     surface.addEventListener("dragover", onDragOver);
     surface.addEventListener("drop", onDrop);
     return () => {
-      surface.removeEventListener("pointerdown", onDown);
+      surface.removeEventListener("pointerdown", onDown, true);
       surface.removeEventListener("pointermove", onMove);
       surface.removeEventListener("pointerup", onUp);
       surface.removeEventListener("dragover", onDragOver);
