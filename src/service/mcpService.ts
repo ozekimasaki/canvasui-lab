@@ -16,6 +16,7 @@ export interface McpToolContext {
   source: SourceService;
   bridge: BridgeService;
   pr: { open: (input: unknown) => Promise<{ url: string; branch: string }> } | null;
+  heal: { run: (input: unknown) => Promise<unknown> };
 }
 
 interface Tool {
@@ -160,6 +161,21 @@ export function createMcpService(ctx: McpToolContext) {
         if (!c.pr) throw new ServiceError("GitHub write-back is not configured", 503);
         return c.pr.open(args);
       },
+    },
+    {
+      name: "heal.run",
+      description:
+        "Evaluate a component screenshot (or source) against a goal and propose AST-anchored fixes. Returns issues and unapplied patches.",
+      schema: z.object({
+        filePath: z.string(),
+        goal: z.string(),
+        image: z.string().optional(),
+        component: z.string().optional(),
+      }),
+      run: async (
+        args: { filePath: string; goal: string; image?: string; component?: string },
+        c,
+      ) => c.heal.run(args),
     },
   ];
 
