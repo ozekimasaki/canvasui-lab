@@ -1,6 +1,7 @@
 import { Camera, Code2, MessageSquarePlus, PenLine, X } from "lucide-react";
 import { useState } from "react";
 import type { MatrixCell } from "../domain/matrix";
+import { useI18n } from "./i18n";
 
 export interface InspectorPanelProps {
   cell: MatrixCell;
@@ -21,6 +22,7 @@ export function InspectorPanel({
   onWriteProp,
   onClose,
 }: InspectorPanelProps) {
+  const { t } = useI18n();
   const [note, setNote] = useState("");
   const [severity, setSeverity] = useState<"info" | "warning" | "error">("info");
   const [propName, setPropName] = useState("label");
@@ -34,7 +36,8 @@ export function InspectorPanel({
           className="cul-icon-btn"
           style={{ marginLeft: "auto" }}
           onClick={onClose}
-          aria-label="Close inspector"
+          aria-label={t("inspector.close")}
+          title={t("inspector.close")}
         >
           <X size={14} />
         </button>
@@ -57,7 +60,7 @@ export function InspectorPanel({
           onClick={onApprove}
           disabled={busy}
         >
-          <Camera size={12} /> Approve baseline
+          <Camera size={12} /> {t("inspector.approve")}
         </button>
         <button
           className="cul-btn"
@@ -65,11 +68,11 @@ export function InspectorPanel({
           onClick={onEditSource}
           disabled={busy}
         >
-          <Code2 size={12} /> Edit source (Monaco)
+          <Code2 size={12} /> {t("inspector.editSource")}
         </button>
         <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
           <p className="cul-hint" style={{ margin: 0 }}>
-            Write a JSX prop back to the component source (AST-anchored)
+            {t("inspector.propHint")}
           </p>
           <div style={{ display: "flex", gap: 8 }}>
             <input
@@ -77,13 +80,13 @@ export function InspectorPanel({
               style={{ width: 90 }}
               value={propName}
               onChange={(e) => setPropName(e.target.value)}
-              placeholder="prop"
+              placeholder={t("inspector.prop")}
             />
             <input
               className="cul-input-field"
               value={propValue}
               onChange={(e) => setPropValue(e.target.value)}
-              placeholder="value"
+              placeholder={t("inspector.value")}
             />
             <button
               className="cul-btn"
@@ -101,7 +104,7 @@ export function InspectorPanel({
           <textarea
             className="cul-textarea"
             rows={2}
-            placeholder="Add a note for this cell…"
+            placeholder={t("inspector.notePlaceholder")}
             value={note}
             onChange={(e) => setNote(e.target.value)}
           />
@@ -123,7 +126,7 @@ export function InspectorPanel({
                 setNote("");
               }}
             >
-              <MessageSquarePlus size={12} /> Pin note
+              <MessageSquarePlus size={12} /> {t("inspector.pin")}
             </button>
           </div>
         </div>

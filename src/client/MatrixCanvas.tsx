@@ -1,3 +1,5 @@
+import { apiFetch } from "./api";
+import { useI18n } from "./i18n";
 import { fitCamera, zoomAt, type GpuCanvas as GpuCanvasApi } from "gpucanvas";
 import {
   CanvasNode,
@@ -67,7 +69,16 @@ function EditorBridge({
   return null;
 }
 
-export function MatrixCanvas({ appName, bridgeToken }: { appName: string; bridgeToken: string }) {
+export function MatrixCanvas({
+  appName,
+  bridgeToken,
+  onOpenDocument,
+}: {
+  appName: string;
+  bridgeToken: string;
+  onOpenDocument?: () => void;
+}) {
+  const { t } = useI18n();
   const { specs, renderCell } = useMemo(buildSpecs, []);
   const cells = useMemo(() => {
     const base = layoutMatrix(specs);
@@ -118,14 +129,14 @@ export function MatrixCanvas({ appName, bridgeToken }: { appName: string; bridge
   }, [chrome, systemDark, canvas]);
 
   useEffect(() => {
-    fetch("/api/tokens")
+    apiFetch("/api/tokens")
       .then((res) => (res.ok ? res.json() : []))
       .then((rows) => setTokens(rows as DesignTokenData[]))
       .catch(() => undefined);
   }, []);
 
   useEffect(() => {
-    fetch("/api/components", {
+    apiFetch("/api/components", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ specs }),
@@ -210,10 +221,10 @@ export function MatrixCanvas({ appName, bridgeToken }: { appName: string; bridge
           anchor: { kind: "jsx-attribute", component: spec.title, name, value },
         });
         await applySource(patch, "gui");
-        setStatus(`Wrote prop ${name} into ${spec.filePath}`);
+        setStatus(t("status.propWritten", { name, file: spec.filePath }));
         canvas?.invalidate();
       } catch (error) {
-        setStatus(error instanceof Error ? error.message : "prop write-back failed");
+        setStatus(error instanceof Error ? error.message : t("status.propFailed"));
       } finally {
         setBusy(false);
       }
@@ -240,14 +251,14 @@ export function MatrixCanvas({ appName, bridgeToken }: { appName: string; bridge
   const handleVrt = useCallback(async () => {
     if (!canvas || busy) return;
     setBusy(true);
-    setStatus("Running VRT…");
+    setStatus(t("status.vrtRunning"));
     setChangedCount(null);
     try {
       const result = await runVrtCheck(canvas, cells, setProgress);
       setChangedCount(result.changedCellKeys.length);
-      setStatus(`VRT complete: ${result.changedCellKeys.length} changed`);
+      setStatus(t("status.vrtDone", { count: result.changedCellKeys.length }));
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "VRT failed");
+      setStatus(error instanceof Error ? error.message : t("status.vrtFailed"));
     } finally {
       setProgress(null);
       setBusy(false);
@@ -257,12 +268,12 @@ export function MatrixCanvas({ appName, bridgeToken }: { appName: string; bridge
   const handleAudit = useCallback(async () => {
     if (!canvas || busy) return;
     setBusy(true);
-    setStatus("Auditing (max 20 cells)…");
+    setStatus(t("status.auditRunning"));
     try {
       const result = await runAudit(canvas, cells);
-      setStatus(`Audit complete: ${result.count} marks`);
+      setStatus(t("status.auditDone", { count: result.count }));
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Audit failed");
+      setStatus(error instanceof Error ? error.message : t("status.auditFailed"));
     } finally {
       setBusy(false);
     }
@@ -273,9 +284,9 @@ export function MatrixCanvas({ appName, bridgeToken }: { appName: string; bridge
     setBusy(true);
     try {
       await approveBaseline(canvas, selectedCell);
-      setStatus(`Baseline approved: ${selectedCell.cellKey}`);
+      setStatus(t("status.baseline", { key: selectedCell.cellKey }));
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Baseline capture failed");
+      setStatus(error instanceof Error ? error.message : t("status.baselineFailed"));
     } finally {
       setBusy(false);
     }
@@ -286,9 +297,9 @@ export function MatrixCanvas({ appName, bridgeToken }: { appName: string; bridge
       if (!canvas || !selectedCell) return;
       try {
         await addHumanMark(canvas, selectedCell.cellKey, selectedElement, text, severity);
-        setStatus("Note pinned");
+        setStatus(t("status.notePinned"));
       } catch (error) {
-        setStatus(error instanceof Error ? error.message : "Note failed");
+        setStatus(error instanceof Error ? error.message : t("status.noteFailed"));
       }
     },
     [canvas, selectedCell, selectedElement],
@@ -359,6 +370,7 @@ export function MatrixCanvas({ appName, bridgeToken }: { appName: string; bridge
         onToggleInteract={() => setInteract(!interact)}
         onRunVrt={() => void handleVrt()}
         onRunAudit={() => void handleAudit()}
+        onOpenDocument={onOpenDocument}
       />
 
       {selectedCell && (

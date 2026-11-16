@@ -1,7 +1,9 @@
+import { apiFetch } from "./api";
 import { Bot, ChevronDown, MapPin, RefreshCw, StickyNote, Trash2, User } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { GpuCanvas } from "gpucanvas";
 import { loadAndDrawMarks, removeDrawing, type MarkRow } from "./auditClient";
+import { useI18n } from "./i18n";
 
 const SEVERITY_COLORS: Record<string, string> = {
   info: "#3b82f6",
@@ -10,11 +12,12 @@ const SEVERITY_COLORS: Record<string, string> = {
 };
 
 export function MarksPanel({ canvas }: { canvas: GpuCanvas | null }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(true);
   const [marks, setMarks] = useState<MarkRow[]>([]);
 
   const refresh = useCallback(async () => {
-    const res = await fetch("/api/marks");
+    const res = await apiFetch("/api/marks");
     if (res.ok) setMarks((await res.json()) as MarkRow[]);
   }, []);
 
@@ -23,13 +26,13 @@ export function MarksPanel({ canvas }: { canvas: GpuCanvas | null }) {
   }, [refresh]);
 
   const remove = async (id: string) => {
-    await fetch(`/api/marks/${id}`, { method: "DELETE" });
+    await apiFetch(`/api/marks/${id}`, { method: "DELETE" });
     if (canvas) removeDrawing(canvas, id);
     await refresh();
   };
 
   const clearAi = async () => {
-    await fetch("/api/marks/clear-ai", { method: "POST" });
+    await apiFetch("/api/marks/clear-ai", { method: "POST" });
     if (canvas) await loadAndDrawMarks(canvas);
     await refresh();
   };
@@ -38,7 +41,7 @@ export function MarksPanel({ canvas }: { canvas: GpuCanvas | null }) {
     <div className="cul-panel" style={{ position: "absolute", right: 16, bottom: 16, width: 320 }}>
       <button className="cul-panel-header" onClick={() => setOpen(!open)}>
         <MapPin size={14} />
-        <span>Marks</span>
+        <span>{t("marks.title")}</span>
         <span className="cul-badge">{marks.length}</span>
         <ChevronDown
           size={14}
@@ -55,10 +58,8 @@ export function MarksPanel({ canvas }: { canvas: GpuCanvas | null }) {
               <Bot size={12} /> Clear AI
             </button>
           </div>
-          <p className="cul-hint">Audit cap: 20 cells per run</p>
-          {marks.length === 0 && (
-            <p className="cul-hint">No marks yet. Run an audit or add a note.</p>
-          )}
+          <p className="cul-hint">{t("marks.cap")}</p>
+          {marks.length === 0 && <p className="cul-hint">{t("marks.empty")}</p>}
           <ul
             style={{
               listStyle: "none",
@@ -90,7 +91,8 @@ export function MarksPanel({ canvas }: { canvas: GpuCanvas | null }) {
                 <button
                   className="cul-icon-btn"
                   onClick={() => void remove(mark.id)}
-                  aria-label="Delete mark"
+                  aria-label={t("marks.delete")}
+                  title={t("marks.delete")}
                 >
                   <Trash2 size={12} />
                 </button>

@@ -730,3 +730,12 @@ body {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+.cul-btn:focus-visible,
+.cul-icon-btn:focus-visible,
+.cul-input-field:focus-visible,
+.cul-select:focus-visible,
+.cul-textarea:focus-visible {
+  outline: 2px solid var(--cul-accent, #8b5cf6);
+  outline-offset: 1px;
+}

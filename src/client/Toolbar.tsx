@@ -10,6 +10,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
+import { useI18n } from "./i18n";
 
 export type ChromeTheme = "system" | "light" | "dark";
 
@@ -30,23 +31,39 @@ export interface ToolbarProps {
   onToggleInteract: () => void;
   onRunVrt: () => void;
   onRunAudit: () => void;
+  onOpenDocument?: () => void;
 }
 
 export function Toolbar(props: ToolbarProps) {
+  const { t, lang, setLang } = useI18n();
   return (
     <div className="cul-toolbar">
       <strong className="cul-title">{props.appName}</strong>
+      {props.onOpenDocument && (
+        <button
+          className="cul-btn"
+          style={{ fontSize: 11, padding: "2px 8px" }}
+          onClick={props.onOpenDocument}
+          title={t("mode.document.tip")}
+        >
+          {t("mode.document")}
+        </button>
+      )}
       <span className={props.mode === "gpu" ? "cul-badge cul-badge-gpu" : "cul-badge"}>
-        {props.mode === "gpu" ? "GPU" : props.mode === "dom" ? "DOM fallback" : "starting"}
+        {props.mode === "gpu"
+          ? "GPU"
+          : props.mode === "dom"
+            ? t("toolbar.dom")
+            : t("toolbar.starting")}
       </span>
-      <span className="cul-hint">{props.cellCount} cells</span>
+      <span className="cul-hint">{t("cells", { count: props.cellCount })}</span>
 
       <div className="cul-toolbar-group">
         <button
           className="cul-icon-btn"
           onClick={props.onCycleChrome}
-          aria-label="Color theme"
-          title={`Theme: ${props.chrome}`}
+          aria-label={t("toolbar.theme", { chrome: props.chrome })}
+          title={t("toolbar.theme", { chrome: props.chrome })}
         >
           {props.chrome === "system" ? (
             <Monitor size={14} />
@@ -56,31 +73,63 @@ export function Toolbar(props: ToolbarProps) {
             <Moon size={14} />
           )}
         </button>
-        <button className="cul-icon-btn" onClick={props.onFit} aria-label="Fit view">
+        <button
+          className="cul-icon-btn"
+          onClick={props.onFit}
+          aria-label={t("toolbar.fit")}
+          title={t("toolbar.fit")}
+        >
           <Maximize size={14} />
         </button>
-        <button className="cul-icon-btn" onClick={props.onZoomIn} aria-label="Zoom in">
+        <button
+          className="cul-icon-btn"
+          onClick={props.onZoomIn}
+          aria-label={t("toolbar.zoomIn")}
+          title={t("toolbar.zoomIn")}
+        >
           <ZoomIn size={14} />
         </button>
-        <button className="cul-icon-btn" onClick={props.onZoomOut} aria-label="Zoom out">
+        <button
+          className="cul-icon-btn"
+          onClick={props.onZoomOut}
+          aria-label={t("toolbar.zoomOut")}
+          title={t("toolbar.zoomOut")}
+        >
           <ZoomOut size={14} />
         </button>
         <button className="cul-btn" onClick={props.onToggleInteract}>
           <MousePointer2 size={12} />
-          {props.interact ? "Interact" : "Edit"}
+          {props.interact ? t("toolbar.interact") : t("toolbar.edit")}
         </button>
       </div>
 
       <div className="cul-toolbar-group">
-        <button className="cul-btn cul-btn-primary" onClick={props.onRunVrt} disabled={props.busy}>
-          <Play size={12} /> Run VRT
+        <button
+          className="cul-btn cul-btn-primary"
+          onClick={props.onRunVrt}
+          disabled={props.busy}
+          title={props.busy ? t("toolbar.busy") : t("toolbar.vrt")}
+        >
+          <Play size={12} /> {t("toolbar.vrt")}
         </button>
-        <button className="cul-btn" onClick={props.onRunAudit} disabled={props.busy}>
-          <ScanSearch size={12} /> Audit
+        <button
+          className="cul-btn"
+          onClick={props.onRunAudit}
+          disabled={props.busy}
+          title={props.busy ? t("toolbar.busy") : t("toolbar.audit")}
+        >
+          <ScanSearch size={12} /> {t("toolbar.audit")}
         </button>
         <a className="cul-btn" href="/history">
-          <History size={12} /> History
+          <History size={12} /> {t("toolbar.history")}
         </a>
+        <button
+          className="cul-btn"
+          style={{ fontSize: 11 }}
+          onClick={() => setLang(lang === "ja" ? "en" : "ja")}
+        >
+          {t("lang.toggle")}
+        </button>
       </div>
 
       {props.progress && (
@@ -94,7 +143,9 @@ export function Toolbar(props: ToolbarProps) {
             props.changedCount > 0 ? "cul-badge cul-badge-bad" : "cul-badge cul-badge-good"
           }
         >
-          {props.changedCount > 0 ? `${props.changedCount} changed` : "clean"}
+          {props.changedCount > 0
+            ? t("toolbar.changed", { count: props.changedCount })
+            : t("toolbar.clean")}
         </span>
       )}
       {props.status && <span className="cul-status">{props.status}</span>}

@@ -1,8 +1,10 @@
+import { apiFetch } from "./api";
 import { diffImages, toBlob, type GpuCanvas } from "gpucanvas";
 import { ChevronDown, Frame, Palette, PenTool, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { MatrixCell } from "../domain/matrix";
 import { designs } from "virtual:pen-designs";
+import { useI18n } from "./i18n";
 
 interface TokenRow {
   id: string;
@@ -36,6 +38,7 @@ async function blobToImageData(blob: Blob): Promise<ImageData> {
 }
 
 export function DesignPanel({ canvas, cells }: { canvas: GpuCanvas | null; cells: MatrixCell[] }) {
+  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
@@ -48,13 +51,13 @@ export function DesignPanel({ canvas, cells }: { canvas: GpuCanvas | null; cells
   const [compare, setCompare] = useState<CompareResult | null>(null);
 
   const refreshTokens = useCallback(async () => {
-    const res = await fetch("/api/tokens");
+    const res = await apiFetch("/api/tokens");
     if (res.ok) setTokens((await res.json()) as TokenRow[]);
   }, []);
 
   const refreshDesigns = useCallback(async () => {
     const options: DesignOption[] = [];
-    const linksRes = await fetch("/api/figma/links");
+    const linksRes = await apiFetch("/api/figma/links");
     if (linksRes.ok) {
       const links = (await linksRes.json()) as { nodeId: string; r2Key: string }[];
       for (const link of links) options.push({ label: `figma:${link.nodeId}`, r2Key: link.r2Key });
@@ -83,7 +86,7 @@ export function DesignPanel({ canvas, cells }: { canvas: GpuCanvas | null; cells
       let imported = 0;
       const summaries: string[] = [];
       for (const design of designs) {
-        const res = await fetch("/api/pen/import", {
+        const res = await apiFetch("/api/pen/import", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({ raw: design.raw }),
@@ -115,7 +118,7 @@ export function DesignPanel({ canvas, cells }: { canvas: GpuCanvas | null; cells
     setBusy(true);
     setMessage("");
     try {
-      const res = await fetch("/api/figma/images", {
+      const res = await apiFetch("/api/figma/images", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -166,7 +169,9 @@ export function DesignPanel({ canvas, cells }: { canvas: GpuCanvas | null; cells
         height: cell.height,
       })[0];
       if (!element) throw new Error("Cell not found on canvas");
-      const designRes = await fetch(`/api/snapshots/png?key=${encodeURIComponent(compareDesign)}`);
+      const designRes = await apiFetch(
+        `/api/snapshots/png?key=${encodeURIComponent(compareDesign)}`,
+      );
       if (!designRes.ok) throw new Error("Design image not found");
       const designData = await blobToImageData(await designRes.blob());
       const implData = await canvas.snapshot(element, { scale: 2 });
@@ -198,7 +203,7 @@ export function DesignPanel({ canvas, cells }: { canvas: GpuCanvas | null; cells
     <div className="cul-panel" style={{ position: "absolute", left: 16, bottom: 16, width: 340 }}>
       <button className="cul-panel-header" onClick={() => setOpen(!open)}>
         <PenTool size={14} />
-        <span>Design sync</span>
+        <span>{t("design.title")}</span>
         <ChevronDown
           size={14}
           style={{ marginLeft: "auto", transform: open ? "none" : "rotate(-90deg)" }}
@@ -221,17 +226,17 @@ export function DesignPanel({ canvas, cells }: { canvas: GpuCanvas | null; cells
 
           <section className="cul-section">
             <h4>
-              <Frame size={12} /> Figma frames
+              <Frame size={12} /> {t("design.figmaFrames")}
             </h4>
             <input
               className="cul-input-field"
-              placeholder="File key"
+              placeholder={t("design.fileKey")}
               value={fileKey}
               onChange={(e) => setFileKey(e.target.value)}
             />
             <input
               className="cul-input-field"
-              placeholder="Node IDs (comma-separated)"
+              placeholder={t("design.nodeIds")}
               value={nodeIds}
               onChange={(e) => setNodeIds(e.target.value)}
             />
@@ -240,13 +245,13 @@ export function DesignPanel({ canvas, cells }: { canvas: GpuCanvas | null; cells
               onClick={() => void importFigma()}
               disabled={busy || !fileKey || !nodeIds}
             >
-              Fetch renders
+              {t("design.fetch")}
             </button>
           </section>
 
           <section className="cul-section">
             <h4>
-              <Palette size={12} /> Tokens ({tokens.length})
+              <Palette size={12} /> {t("design.tokens", { count: tokens.length })}
             </h4>
             <div style={{ display: "grid", gap: 4, maxHeight: 120, overflowY: "auto" }}>
               {tokens.slice(0, 40).map((token) => (
@@ -270,13 +275,13 @@ export function DesignPanel({ canvas, cells }: { canvas: GpuCanvas | null; cells
           </section>
 
           <section className="cul-section">
-            <h4>Compare design vs implementation</h4>
+            <h4>{t("design.compare")}</h4>
             <select
               className="cul-select"
               value={compareDesign}
               onChange={(e) => setCompareDesign(e.target.value)}
             >
-              <option value="">Design image…</option>
+              <option value="">{t("design.designImage")}</option>
               {designOptions.map((option) => (
                 <option key={option.r2Key} value={option.r2Key}>
                   {option.label}
@@ -288,7 +293,7 @@ export function DesignPanel({ canvas, cells }: { canvas: GpuCanvas | null; cells
               value={compareCellKey}
               onChange={(e) => setCompareCellKey(e.target.value)}
             >
-              <option value="">Implementation cell…</option>
+              <option value="">{t("design.implCell")}</option>
               {cells.slice(0, 400).map((cell) => (
                 <option key={cell.cellKey} value={cell.cellKey}>
                   {cell.componentId} · {Object.values(cell.axisValues).join("/")}
@@ -300,7 +305,7 @@ export function DesignPanel({ canvas, cells }: { canvas: GpuCanvas | null; cells
               onClick={() => void runCompare()}
               disabled={busy || !compareDesign || !compareCellKey}
             >
-              Compare
+              {t("design.compareRun")}
             </button>
           </section>
 
@@ -316,12 +321,13 @@ export function DesignPanel({ canvas, cells }: { canvas: GpuCanvas | null; cells
         <div className="cul-modal-backdrop" onClick={closeCompare}>
           <div className="cul-modal" onClick={(e) => e.stopPropagation()}>
             <div className="cul-panel-header">
-              <span>Design comparison — {(compare.ratio * 100).toFixed(2)}% pixels differ</span>
+              <span>{t("design.diffRatio", { ratio: (compare.ratio * 100).toFixed(2) })}</span>
               <button
                 className="cul-icon-btn"
                 style={{ marginLeft: "auto" }}
                 onClick={closeCompare}
-                aria-label="Close"
+                aria-label={t("design.close")}
+                title={t("design.close")}
               >
                 <X size={14} />
               </button>
@@ -329,15 +335,15 @@ export function DesignPanel({ canvas, cells }: { canvas: GpuCanvas | null; cells
             <div className="cul-compare-grid">
               <figure>
                 <img src={compare.designUrl} alt="Design" />
-                <figcaption>Design</figcaption>
+                <figcaption>{t("design.design")}</figcaption>
               </figure>
               <figure>
                 <img src={compare.implUrl} alt="Implementation" />
-                <figcaption>Implementation</figcaption>
+                <figcaption>{t("design.impl")}</figcaption>
               </figure>
               <figure>
                 <img src={compare.diffUrl} alt="Diff" />
-                <figcaption>Diff</figcaption>
+                <figcaption>{t("design.diff")}</figcaption>
               </figure>
             </div>
           </div>

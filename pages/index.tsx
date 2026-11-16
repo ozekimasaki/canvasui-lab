@@ -1,4 +1,4 @@
-import { MatrixCanvas } from "../src/client/MatrixCanvas";
+import { App } from "../src/client/App";
 
 export default function IndexPage({
   appName,
@@ -7,5 +7,5 @@ export default function IndexPage({
   appName: string;
   bridgeToken: string;
 }) {
-  return <MatrixCanvas appName={appName} bridgeToken={bridgeToken} />;
+  return <App appName={appName} bridgeToken={bridgeToken} />;
 }
