@@ -1,0 +1,99 @@
+{
+  "version": "2.22",
+  "themes": {
+    "mode": ["light", "dark"]
+  },
+  "variables": {
+    "color.background": {
+      "type": "color",
+      "value": [
+        { "value": "#ffffff", "theme": { "mode": "light" } },
+        { "value": "#0b0d10", "theme": { "mode": "dark" } }
+      ]
+    },
+    "color.foreground": {
+      "type": "color",
+      "value": [
+        { "value": "#1a1d21", "theme": { "mode": "light" } },
+        { "value": "#e6e8eb", "theme": { "mode": "dark" } }
+      ]
+    },
+    "color.primary": {
+      "type": "color",
+      "value": [
+        { "value": "#4f46e5", "theme": { "mode": "light" } },
+        { "value": "#818cf8", "theme": { "mode": "dark" } }
+      ]
+    },
+    "color.border": {
+      "type": "color",
+      "value": [
+        { "value": "#e2e5e9", "theme": { "mode": "light" } },
+        { "value": "#2a2f36", "theme": { "mode": "dark" } }
+      ]
+    },
+    "radius.md": { "type": "number", "value": 8 },
+    "spacing.md": { "type": "number", "value": 16 }
+  },
+  "children": [
+    {
+      "id": "button",
+      "type": "frame",
+      "name": "Button",
+      "reusable": true,
+      "x": 0,
+      "y": 0,
+      "layout": "horizontal",
+      "justifyContent": "center",
+      "alignItems": "center",
+      "padding": [10, 20],
+      "cornerRadius": "$radius.md",
+      "fill": "$color.primary",
+      "children": [
+        {
+          "id": "button-label",
+          "type": "text",
+          "content": "Continue",
+          "fill": "#ffffff",
+          "fontSize": 14,
+          "fontWeight": "600"
+        }
+      ]
+    },
+    {
+      "id": "card",
+      "type": "frame",
+      "name": "Card",
+      "reusable": true,
+      "x": 200,
+      "y": 0,
+      "layout": "vertical",
+      "gap": "$spacing.md",
+      "padding": 24,
+      "width": 320,
+      "cornerRadius": "$radius.md",
+      "fill": "$color.background",
+      "stroke": "$color.border",
+      "strokeWidth": 1,
+      "children": [
+        {
+          "id": "card-title",
+          "type": "text",
+          "content": "Card title",
+          "fill": "$color.foreground",
+          "fontSize": 16,
+          "fontWeight": "600"
+        },
+        {
+          "id": "card-body",
+          "type": "text",
+          "content": "Supporting text for the card component.",
+          "fill": "$color.foreground",
+          "fontSize": 13,
+          "textGrowth": "fixed-width",
+          "width": "fill_container"
+        }
+      ]
+    }
+  ]
+}
