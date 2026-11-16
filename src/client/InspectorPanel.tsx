@@ -1,4 +1,4 @@
-import { Camera, MessageSquarePlus, X } from "lucide-react";
+import { Camera, Code2, MessageSquarePlus, PenLine, X } from "lucide-react";
 import { useState } from "react";
 import type { MatrixCell } from "../domain/matrix";
 
@@ -7,12 +7,24 @@ export interface InspectorPanelProps {
   busy: boolean;
   onApprove: () => void;
   onAddNote: (text: string, severity: "info" | "warning" | "error") => void;
+  onEditSource: () => void;
+  onWriteProp: (name: string, value: string) => void;
   onClose: () => void;
 }
 
-export function InspectorPanel({ cell, busy, onApprove, onAddNote, onClose }: InspectorPanelProps) {
+export function InspectorPanel({
+  cell,
+  busy,
+  onApprove,
+  onAddNote,
+  onEditSource,
+  onWriteProp,
+  onClose,
+}: InspectorPanelProps) {
   const [note, setNote] = useState("");
   const [severity, setSeverity] = useState<"info" | "warning" | "error">("info");
+  const [propName, setPropName] = useState("label");
+  const [propValue, setPropValue] = useState("");
 
   return (
     <div className="cul-panel" style={{ position: "absolute", right: 16, top: 76, width: 300 }}>
@@ -47,6 +59,44 @@ export function InspectorPanel({ cell, busy, onApprove, onAddNote, onClose }: In
         >
           <Camera size={12} /> Approve baseline
         </button>
+        <button
+          className="cul-btn"
+          style={{ width: "100%", justifyContent: "center", marginTop: 8 }}
+          onClick={onEditSource}
+          disabled={busy}
+        >
+          <Code2 size={12} /> Edit source (Monaco)
+        </button>
+        <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+          <p className="cul-hint" style={{ margin: 0 }}>
+            Write a JSX prop back to the component source (AST-anchored)
+          </p>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              className="cul-input-field"
+              style={{ width: 90 }}
+              value={propName}
+              onChange={(e) => setPropName(e.target.value)}
+              placeholder="prop"
+            />
+            <input
+              className="cul-input-field"
+              value={propValue}
+              onChange={(e) => setPropValue(e.target.value)}
+              placeholder="value"
+            />
+            <button
+              className="cul-btn"
+              disabled={busy || !propName || !propValue}
+              onClick={() => {
+                onWriteProp(propName, propValue);
+                setPropValue("");
+              }}
+            >
+              <PenLine size={12} />
+            </button>
+          </div>
+        </div>
         <div style={{ marginTop: 16, display: "grid", gap: 8 }}>
           <textarea
             className="cul-textarea"

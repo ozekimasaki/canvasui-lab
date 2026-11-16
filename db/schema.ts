@@ -82,3 +82,54 @@ export const figmaLinks = sqliteTable("figma_links", {
     .notNull()
     .default(sql`(datetime('now'))`),
 });
+
+export const mcpSessions = sqliteTable("mcp_sessions", {
+  id: text("id").primaryKey(),
+  protocolVersion: text("protocol_version").notNull(),
+  clientInfo: text("client_info").notNull().default("{}"),
+  initialized: integer("initialized").notNull().default(0),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  expiresAt: text("expires_at").notNull(),
+});
+
+export const mcpOutbox = sqliteTable("mcp_outbox", {
+  id: text("id").primaryKey(),
+  sessionId: text("session_id").notNull(),
+  payload: text("payload").notNull(),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const bridgeState = sqliteTable("bridge_state", {
+  id: text("id").primaryKey(),
+  topic: text("topic").notNull(),
+  payload: text("payload").notNull(),
+  updatedAt: text("updated_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const bridgeResults = sqliteTable("bridge_results", {
+  id: text("id").primaryKey(),
+  commandId: text("command_id").notNull(),
+  payload: text("payload").notNull(),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const sourcePatches = sqliteTable("source_patches", {
+  id: text("id").primaryKey(),
+  filePath: text("file_path").notNull(),
+  beforeHash: text("before_hash").notNull(),
+  afterHash: text("after_hash").notNull(),
+  editsJson: text("edits_json").notNull(),
+  author: text("author", { enum: ["gui", "ai", "mcp"] }).notNull(),
+  prUrl: text("pr_url"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});

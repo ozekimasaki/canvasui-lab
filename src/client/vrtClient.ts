@@ -72,7 +72,7 @@ async function uploadSnapshot(
     scale: number;
   },
   png: Blob,
-): Promise<void> {
+): Promise<{ r2Key: string }> {
   const form = new FormData();
   form.set("componentId", meta.componentId);
   form.set("cellKey", meta.cellKey);
@@ -93,6 +93,7 @@ async function uploadSnapshot(
         : `Upload failed: ${res.status}`;
     throw new Error(message);
   }
+  return (await res.json()) as { r2Key: string };
 }
 
 export async function runVrtCheck(
@@ -201,4 +202,29 @@ export async function approveBaseline(canvas: GpuCanvas, cell: MatrixCell): Prom
     png,
   );
   canvas.setEffect(element, null);
+}
+
+export async function captureCellSnapshot(
+  canvas: GpuCanvas,
+  cell: MatrixCell,
+  scale = 2,
+): Promise<{ r2Key: string }> {
+  if (canvas.mode !== "gpu") {
+    throw new Error("Snapshot requires the GPU backend (Chrome 157+).");
+  }
+  const element = elementFor(canvas, cell);
+  if (!element) throw new Error("Cell element not found on canvas");
+  const image = await canvas.snapshot(element, { scale });
+  const png = await toBlob(image);
+  return uploadSnapshot(
+    {
+      componentId: cell.componentId,
+      cellKey: cell.cellKey,
+      kind: "run",
+      width: image.width,
+      height: image.height,
+      scale,
+    },
+    png,
+  );
 }

@@ -77,6 +77,35 @@ export interface FigmaLinkData {
 }
 export type ValidatedFigmaLink = Brand<FigmaLinkData, "ValidatedFigmaLink">;
 
+export interface SourceEdit {
+  start: number;
+  end: number;
+  replacement: string;
+}
+
+export interface ASTPatchData {
+  filePath: string;
+  baseHash: string;
+  afterHash: string;
+  edits: readonly SourceEdit[];
+}
+export type ValidatedASTPatch = Brand<ASTPatchData, "ValidatedASTPatch">;
+
+export interface SourceFileData {
+  filePath: string;
+  content: string;
+  hash: string;
+}
+export type ValidatedSourceFile = Brand<SourceFileData, "ValidatedSourceFile">;
+
+export interface PRRequestData {
+  branch: string;
+  title: string;
+  body: string;
+  patches: readonly ValidatedASTPatch[];
+}
+export type ValidatedPRRequest = Brand<PRRequestData, "ValidatedPRRequest">;
+
 export interface AuditMarkData {
   cellKey: string;
   targetElementId: string | null;

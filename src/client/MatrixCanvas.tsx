@@ -1,33 +1,73 @@
 import { fitCamera, zoomAt, type GpuCanvas as GpuCanvasApi } from "gpucanvas";
-import { CanvasNode, GpuCanvas, labelComponent, pickComponents, useEditor } from "gpucanvas/react";
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import {
+  CanvasNode,
+  GpuCanvas,
+  labelComponent,
+  pickComponents,
+  useEditor,
+  useGpuCanvas,
+} from "gpucanvas/react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import type { DesignTokenData } from "../domain/brands";
 import { layoutMatrix, matrixBounds, type MatrixCell } from "../domain/matrix";
 import { tokensToCssVars } from "../domain/token";
 import { addHumanMark, loadAndDrawMarks, runAudit } from "./auditClient";
 import "./app.css";
+import { startCommandListener, startStatePublish } from "./bridgeClient";
 import { DesignPanel } from "./DesignPanel";
 import { InspectorPanel } from "./InspectorPanel";
 import { MarksPanel } from "./MarksPanel";
+import { applySource, proposeSource } from "./sourceClient";
 import { buildSpecs } from "./storiesToSpecs";
 import { Toolbar, type ChromeTheme } from "./Toolbar";
-import { approveBaseline, runVrtCheck, type VrtProgress } from "./vrtClient";
+import { approveBaseline, captureCellSnapshot, runVrtCheck, type VrtProgress } from "./vrtClient";
+
+const EditorPanel = lazy(() => import("./EditorPanel"));
 
 function EditorBridge({
   trigger,
   onSelect,
+  onOpenEditor,
 }: {
   trigger: "shift-click" | "click";
   onSelect: (element: Element | null) => void;
+  onOpenEditor: (cellKey: string) => void;
 }) {
+  const canvas = useGpuCanvas();
   const { selected } = useEditor({ pick: pickComponents, label: labelComponent, trigger });
+  const selectedRef = useRef<Element | null>(null);
   useEffect(() => {
-    onSelect(selected[0]?.[0] ?? null);
+    const element = selected[0]?.[0] ?? null;
+    selectedRef.current = element;
+    onSelect(element);
   }, [selected, onSelect]);
+  useEffect(() => {
+    if (!canvas) return;
+    const surface = canvas.surface;
+    // gpucanvas has no dblclick hook: a double-click while the component root
+    // layer is selected opens the source editor instead of drilling deeper.
+    const onDblClick = (event: MouseEvent) => {
+      const target = event.target as Element | null;
+      const host = target?.closest?.("[data-cellkey]") ?? null;
+      const key = host?.getAttribute("data-cellkey");
+      if (key) onOpenEditor(key);
+    };
+    surface.addEventListener("dblclick", onDblClick);
+    return () => surface.removeEventListener("dblclick", onDblClick);
+  }, [canvas, onOpenEditor]);
   return null;
 }
 
-export function MatrixCanvas({ appName }: { appName: string }) {
+export function MatrixCanvas({ appName, bridgeToken }: { appName: string; bridgeToken: string }) {
   const { specs, renderCell } = useMemo(buildSpecs, []);
   const cells = useMemo(() => {
     const base = layoutMatrix(specs);
@@ -58,6 +98,7 @@ export function MatrixCanvas({ appName }: { appName: string }) {
   const [status, setStatus] = useState("");
   const [changedCount, setChangedCount] = useState<number | null>(null);
   const [chrome, setChrome] = useState<ChromeTheme>("system");
+  const [editorFile, setEditorFile] = useState<string | null>(null);
   const [systemDark, setSystemDark] = useState(
     () => window.matchMedia("(prefers-color-scheme: dark)").matches,
   );
@@ -99,6 +140,26 @@ export function MatrixCanvas({ appName }: { appName: string }) {
     canvas?.invalidate();
   }, [tokens, canvas]);
 
+  useEffect(() => {
+    if (!canvas) return;
+    return startStatePublish(canvas, cells, bridgeToken);
+  }, [canvas, cells, bridgeToken]);
+
+  useEffect(() => {
+    if (!canvas) return;
+    return startCommandListener(canvas, cells, bridgeToken, {
+      snapshot: (cellKey, scale) => {
+        const cell = cells.find((candidate) => candidate.cellKey === cellKey);
+        if (!cell) throw new Error(`unknown cell: ${cellKey}`);
+        return captureCellSnapshot(canvas, cell, scale);
+      },
+      vrt: (cellKeys) =>
+        runVrtCheck(canvas, cellKeys ? cells.filter((c) => cellKeys.includes(c.cellKey)) : cells),
+      audit: (cellKeys) =>
+        runAudit(canvas, cellKeys ? cells.filter((c) => cellKeys.includes(c.cellKey)) : cells),
+    });
+  }, [canvas, cells, bridgeToken]);
+
   const cssVarsByTheme = useMemo(() => {
     const themes = new Set(cells.map((cell) => cell.axisValues.theme ?? "light"));
     const map: Record<string, CSSProperties> = {};
@@ -118,6 +179,46 @@ export function MatrixCanvas({ appName }: { appName: string }) {
       setSelectedCell(key ? (cells.find((cell) => cell.cellKey === key) ?? null) : null);
     },
     [cells],
+  );
+
+  const handleOpenEditor = useCallback(
+    (cellKey: string) => {
+      const cell = cells.find((candidate) => candidate.cellKey === cellKey);
+      const spec = specs.find((candidate) => candidate.id === cell?.componentId);
+      if (spec) setEditorFile(spec.filePath);
+    },
+    [cells, specs],
+  );
+
+  const handleWriteProp = useCallback(
+    async (name: string, rawValue: string) => {
+      if (!selectedCell || busy) return;
+      const spec = specs.find((candidate) => candidate.id === selectedCell.componentId);
+      if (!spec) return;
+      const value =
+        rawValue === "true"
+          ? true
+          : rawValue === "false"
+            ? false
+            : /^-?\d+(\.\d+)?$/.test(rawValue)
+              ? Number(rawValue)
+              : rawValue;
+      setBusy(true);
+      try {
+        const { patch } = await proposeSource({
+          filePath: spec.filePath,
+          anchor: { kind: "jsx-attribute", component: spec.title, name, value },
+        });
+        await applySource(patch, "gui");
+        setStatus(`Wrote prop ${name} into ${spec.filePath}`);
+        canvas?.invalidate();
+      } catch (error) {
+        setStatus(error instanceof Error ? error.message : "prop write-back failed");
+      } finally {
+        setBusy(false);
+      }
+    },
+    [selectedCell, specs, busy, canvas],
   );
 
   const handleFit = useCallback(() => {
@@ -202,7 +303,11 @@ export function MatrixCanvas({ appName }: { appName: string }) {
           setCanvas(ready);
         }}
       >
-        <EditorBridge trigger={interact ? "shift-click" : "click"} onSelect={handleSelect} />
+        <EditorBridge
+          trigger={interact ? "shift-click" : "click"}
+          onSelect={handleSelect}
+          onOpenEditor={handleOpenEditor}
+        />
         {cells.map((cell) => {
           const theme = cell.axisValues.theme ?? "light";
           const axisLabel = Object.entries(cell.axisValues)
@@ -262,11 +367,35 @@ export function MatrixCanvas({ appName }: { appName: string }) {
           busy={busy}
           onApprove={() => void handleApprove()}
           onAddNote={(text, severity) => void handleNote(text, severity)}
+          onEditSource={() => handleOpenEditor(selectedCell.cellKey)}
+          onWriteProp={(name, value) => void handleWriteProp(name, value)}
           onClose={() => {
             setSelectedCell(null);
             setSelectedElement(null);
           }}
         />
+      )}
+
+      {editorFile && (
+        <Suspense
+          fallback={
+            <div
+              className="cul-panel"
+              style={{ position: "absolute", right: 16, top: 76, padding: 16 }}
+            >
+              Loading editor…
+            </div>
+          }
+        >
+          <EditorPanel
+            filePath={editorFile}
+            onClose={() => setEditorFile(null)}
+            onApplied={(message) => {
+              setStatus(message);
+              canvas?.invalidate();
+            }}
+          />
+        </Suspense>
       )}
 
       <DesignPanel canvas={canvas} cells={cells} />

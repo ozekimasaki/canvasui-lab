@@ -87,3 +87,51 @@ are rejected. CI (`.github/workflows/ci.yml`) runs `vp check` (Oxlint + tsgo) an
 | `npm run db:push` / `db:generate` | local schema / migrations                |
 | `npm run deploy`                  | build + provision + deploy to Cloudflare |
 | `npm run pen:export`              | pen CLI design baselines into R2         |
+
+## Remote MCP server (AI agents)
+
+The backend is a standard remote MCP server on Cloudflare Workers with two transports:
+
+- Streamable HTTP: `POST/GET/DELETE /api/mcp` (session via `Mcp-Session-Id` header)
+- Legacy HTTP+SSE: `GET /api/mcp/sse` + `POST /api/mcp/messages?sessionId=…`
+
+In production both require `Authorization: Bearer <MCP_AUTH_TOKEN>` (or `?token=` for SSE clients).
+Set the secret with `npx void secret put MCP_AUTH_TOKEN=…`.
+
+Tools: `canvas.cells`, `canvas.describe`, `canvas.snapshot`, `vrt.run`, `vrt.baselines`,
+`audit.run`, `marks.list`, `marks.add`, `source.read`, `source.propose`, `source.apply`, `pr.open`.
+Canvas tools talk to the open browser tab through a live SSE bridge (`void/live`), so keep the
+canvas open while agents inspect or test it.
+
+Cursor / Claude desktop config example (Streamable HTTP):
+
+```json
+{
+  "mcpServers": {
+    "canvasui-lab": {
+      "url": "https://<your-worker>.workers.dev/api/mcp",
+      "headers": { "Authorization": "Bearer <MCP_AUTH_TOKEN>" }
+    }
+  }
+}
+```
+
+### Write-back modes
+
+`WRITEBACK_MODE` selects the source repository adapter:
+
+- `local` (dev): AST patches are applied to local `src/components/**/*.tsx` through a
+  token-guarded Vite dev middleware (`CANVASUI_WRITEBACK_TOKEN`).
+- `github` (production): patches are committed to `canvasui/*` branches and opened as pull
+  requests via the GitHub API (`GITHUB_TOKEN`, `GITHUB_REPO`). Main is never written directly.
+- `off`: write-back disabled.
+
+Every patch is AST-validated (babel parser, TS+JSX): allowlisted paths, baseHash optimistic
+concurrency, unique anchors, export preservation, and a parse check on the result. Applied
+patches are recorded in D1 (`source_patches`).
+
+### In-canvas editing
+
+Double-click a component (or use "Edit source" in the Inspector) to open Monaco on its `.tsx`.
+"Apply to source" proposes an AST diff of your edit and writes it back; HMR updates every matrix
+cell instantly. The Inspector can also write a single JSX prop back through an AST anchor.

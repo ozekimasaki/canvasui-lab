@@ -1,5 +1,15 @@
 declare module "*.css";
 
+declare module "monaco-editor/language/typescript/monaco.contribution" {
+  export const typescriptDefaults: {
+    setCompilerOptions(options: Record<string, unknown>): void;
+    setDiagnosticsOptions(options: Record<string, unknown>): void;
+  };
+  export const JsxEmit: { ReactJSX: number };
+  export const ScriptTarget: { ESNext: number };
+  export const ModuleKind: { ESNext: number };
+}
+
 declare module "virtual:stories-registry" {
   export interface RawStory {
     name: string;
