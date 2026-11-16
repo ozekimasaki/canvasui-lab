@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "source": {
+    "routes": [],
+    "workers_dev": true,
+    "preview_urls": true
+  },
+  "resolved": {
+    "compatibility_date": "2026-02-24",
+    "account_id": "6f2f1ee8a618e7fcb9f6737c3a84c526",
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "database_name": "canvasui-lab-db",
+        "database_id": "502eb0aa-7f4c-4231-9389-fff921107942",
+        "migrations_dir": "./db/migrations"
+      }
+    ],
+    "r2_buckets": [
+      {
+        "binding": "STORAGE",
+        "bucket_name": "canvasui-lab-storage"
+      }
+    ],
+    "name": "canvasui-lab",
+    "routes": [],
+    "workers_dev": true,
+    "preview_urls": true
+  },
+  "text": "{\n  \"compatibility_date\": \"2026-02-24\",\n  \"account_id\": \"6f2f1ee8a618e7fcb9f6737c3a84c526\",\n  \"d1_databases\": [\n    {\n      \"binding\": \"DB\",\n      \"database_name\": \"canvasui-lab-db\",\n      \"database_id\": \"502eb0aa-7f4c-4231-9389-fff921107942\",\n      \"migrations_dir\": \"./db/migrations\"\n    }\n  ],\n  \"r2_buckets\": [\n    {\n      \"binding\": \"STORAGE\",\n      \"bucket_name\": \"canvasui-lab-storage\"\n    }\n  ],\n  \"name\": \"canvasui-lab\",\n  \"routes\": [],\n  \"workers_dev\": true,\n  \"preview_urls\": true\n}\n"
+}
