@@ -12,14 +12,23 @@ export function createChatService(deps: { ai: AiPort }) {
   return {
     async chat(input: unknown) {
       const parsed = chatSchema.parse(input);
-      const result = await deps.ai.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
-        messages: [
-          { role: "system", content: SYSTEM },
-          { role: "user", content: `Context: ${JSON.stringify(parsed.context ?? {})}` },
-          ...parsed.messages,
-        ],
-        max_tokens: 1500,
-      });
+      let result: unknown;
+      try {
+        result = await deps.ai.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+          messages: [
+            { role: "system", content: SYSTEM },
+            { role: "user", content: `Context: ${JSON.stringify(parsed.context ?? {})}` },
+            ...parsed.messages,
+          ],
+          max_tokens: 1500,
+        });
+      } catch {
+        return {
+          reply:
+            "AI に接続できません。ローカルで使うには CF_ACCOUNT_ID と CF_API_TOKEN を設定するか、Web 版でチャットしてください。",
+          actions: [],
+        };
+      }
       const response =
         typeof result === "object" && result !== null && "response" in result
           ? (result as { response: unknown }).response
