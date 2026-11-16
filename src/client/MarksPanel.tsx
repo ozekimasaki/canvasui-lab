@@ -11,7 +11,7 @@ const SEVERITY_COLORS: Record<string, string> = {
   error: "#ef4444",
 };
 
-export function MarksPanel({ canvas }: { canvas: GpuCanvas | null }) {
+export function MarksPanel({ canvas, embedded }: { canvas: GpuCanvas | null; embedded?: boolean }) {
   const { t } = useI18n();
   const [open, setOpen] = useState(true);
   const [marks, setMarks] = useState<MarkRow[]>([]);
@@ -38,7 +38,21 @@ export function MarksPanel({ canvas }: { canvas: GpuCanvas | null }) {
   };
 
   return (
-    <div className="cul-panel" style={{ position: "absolute", right: 16, bottom: 16, width: 320 }}>
+    <div
+      className="cul-panel"
+      style={
+        embedded
+          ? {
+              position: "static",
+              width: "100%",
+              flex: 1,
+              minHeight: 0,
+              display: "flex",
+              flexDirection: "column",
+            }
+          : { position: "absolute", right: 16, bottom: 16, width: 320 }
+      }
+    >
       <button className="cul-panel-header" onClick={() => setOpen(!open)}>
         <MapPin size={14} />
         <span>{t("marks.title")}</span>
@@ -67,7 +81,8 @@ export function MarksPanel({ canvas }: { canvas: GpuCanvas | null }) {
               padding: 0,
               display: "grid",
               gap: 8,
-              maxHeight: 260,
+              maxHeight: embedded ? "none" : 260,
+              flex: embedded ? 1 : undefined,
               overflowY: "auto",
             }}
           >

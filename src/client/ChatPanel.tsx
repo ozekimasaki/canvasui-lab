@@ -162,7 +162,7 @@ export function ChatPanel({
         right: 312,
         top: 60,
         bottom: 32,
-        width: 340,
+        width: "min(340px, calc(100vw - 320px))",
         display: "flex",
         flexDirection: "column",
         zIndex: 25,

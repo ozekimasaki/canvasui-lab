@@ -173,7 +173,7 @@ function DocEditorBridge({
     color: "#8b5cf6",
     marquee: tool !== "H",
     pick: (element) => {
-      if (tool === "H" || tool === "Z") return [];
+      if (tool !== "V") return [];
       const host = element.closest("[data-docnode]");
       return host ? [host] : [];
     },

@@ -76,7 +76,7 @@ export type DocAction =
   | { type: "set"; id: string; patch: Partial<DocNode> }
   | { type: "remove"; ids: string[] }
   | { type: "duplicate"; ids: string[] }
-  | { type: "group"; ids: string[]; name: string }
+  | { type: "group"; ids: string[]; name: string; id?: string }
   | { type: "ungroup"; id: string }
   | {
       type: "align";
@@ -182,7 +182,7 @@ export function reduce(doc: Document, action: DocAction): Document {
       const x = Math.min(...members.map((n) => n.x));
       const y = Math.min(...members.map((n) => n.y));
       const frame: FrameNode = {
-        id: crypto.randomUUID(),
+        id: action.id ?? crypto.randomUUID(),
         kind: "frame",
         name: action.name,
         x,

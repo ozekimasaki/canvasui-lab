@@ -2,6 +2,7 @@ import type * as monaco from "monaco-editor";
 import { Code2, Save, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { applySource, proposeSource, readSource } from "./sourceClient";
+import { useI18n } from "./i18n";
 
 export default function EditorPanel({
   filePath,
@@ -12,10 +13,11 @@ export default function EditorPanel({
   onClose: () => void;
   onApplied: (message: string) => void;
 }) {
+  const { t } = useI18n();
   const hostRef = useRef<HTMLDivElement>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const [baseHash, setBaseHash] = useState("");
-  const [status, setStatus] = useState("loading editor…");
+  const [status, setStatus] = useState(t("editor.loading"));
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -76,12 +78,12 @@ export default function EditorPanel({
     const editor = editorRef.current;
     if (!editor || busy) return;
     setBusy(true);
-    setStatus("validating AST patch…");
+    setStatus(t("editor.validating"));
     try {
       const { patch } = await proposeSource({ filePath, baseHash, content: editor.getValue() });
       await applySource(patch, "gui");
       setBaseHash(patch.afterHash);
-      onApplied(`Applied ${patch.edits.length} AST edit(s) to ${filePath}`);
+      onApplied(t("editor.applied", { count: patch.edits.length, file: filePath }));
       onClose();
     } catch (error) {
       setStatus(error instanceof Error ? error.message : "apply failed");
@@ -91,40 +93,52 @@ export default function EditorPanel({
   };
 
   return (
-    <div
-      className="cul-panel"
-      style={{
-        position: "absolute",
-        right: 16,
-        top: 76,
-        width: "min(620px, 90vw)",
-        height: "70vh",
-        display: "flex",
-        flexDirection: "column",
-        zIndex: 20,
-      }}
-    >
-      <div className="cul-panel-header">
-        <Code2 size={14} />
-        <span style={{ textTransform: "none", letterSpacing: 0, fontSize: 12 }}>{filePath}</span>
-        <button
-          className="cul-btn cul-btn-primary"
-          style={{ marginLeft: "auto" }}
-          onClick={() => void save()}
-          disabled={busy}
-        >
-          <Save size={12} /> Apply to source
-        </button>
-        <button className="cul-icon-btn" onClick={onClose} aria-label="Close editor">
-          <X size={14} />
-        </button>
+    <>
+      <div
+        style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.35)", zIndex: 55 }}
+        onClick={onClose}
+      />
+      <div
+        className="cul-panel"
+        style={{
+          position: "fixed",
+          left: "50%",
+          top: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "min(720px, 92vw)",
+          height: "78vh",
+          display: "flex",
+          flexDirection: "column",
+          zIndex: 60,
+        }}
+      >
+        <div className="cul-panel-header">
+          <Code2 size={14} />
+          <span style={{ textTransform: "none", letterSpacing: 0, fontSize: 12 }}>{filePath}</span>
+          <button
+            className="cul-btn cul-btn-primary"
+            style={{ marginLeft: "auto" }}
+            onClick={() => void save()}
+            disabled={busy}
+          >
+            <Save size={12} /> {t("editor.apply")}
+          </button>
+          <button
+            className="cul-icon-btn"
+            onClick={onClose}
+            aria-label={t("editor.close")}
+            title={t("editor.close")}
+          >
+            <X size={14} />
+          </button>
+        </div>
+        <div ref={hostRef} style={{ flex: 1, minHeight: 0 }} />
+        {status && (
+          <p className="cul-hint" style={{ padding: "0 16px 12px", margin: 0 }}>
+            {status}
+          </p>
+        )}
       </div>
-      <div ref={hostRef} style={{ flex: 1, minHeight: 0 }} />
-      {status && (
-        <p className="cul-hint" style={{ padding: "0 16px 12px", margin: 0 }}>
-          {status}
-        </p>
-      )}
-    </div>
+    </>
   );
 }

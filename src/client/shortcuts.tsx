@@ -39,6 +39,8 @@ export type ShortcutAction =
   | "chat"
   | "save"
   | "cheat"
+  | "cut"
+  | "paste"
   | "toolV"
   | "toolH"
   | "toolF"
@@ -65,6 +67,8 @@ export const SHORTCUT_TABLE: { keys: string; action: ShortcutAction }[] = [
   { keys: "Cmd+A", action: "selectAll" },
   { keys: "Esc", action: "clear" },
   { keys: "Cmd+D", action: "duplicate" },
+  { keys: "Cmd+X", action: "cut" },
+  { keys: "Cmd+V", action: "paste" },
   { keys: "Del", action: "delete" },
   { keys: "←↑→↓", action: "nudgeLeft" },
   { keys: "Shift+←↑→↓", action: "nudgeLeft10" },
@@ -109,6 +113,8 @@ export function useShortcuts(onAction: (action: ShortcutAction) => void, enabled
       let action: ShortcutAction | null = null;
       if (mod && lower === "z") action = event.shiftKey ? "redo" : "undo";
       else if (mod && lower === "d") action = "duplicate";
+      else if (mod && lower === "x") action = "cut";
+      else if (mod && lower === "v") action = "paste";
       else if (mod && lower === "a") action = "selectAll";
       else if (mod && lower === "g")
         action = event.shiftKey ? "ungroup" : event.altKey ? "frameSelection" : "group";
@@ -171,8 +177,59 @@ export function useShortcuts(onAction: (action: ShortcutAction) => void, enabled
   }, [onAction, enabled]);
 }
 
+const ACTION_LABELS: Record<ShortcutAction, [string, string]> = {
+  undo: ["元に戻す", "Undo"],
+  redo: ["やり直す", "Redo"],
+  delete: ["削除", "Delete"],
+  duplicate: ["複製", "Duplicate"],
+  group: ["グループ化", "Group"],
+  ungroup: ["グループ解除", "Ungroup"],
+  frameSelection: ["フレーム化", "Frame selection"],
+  selectAll: ["全選択", "Select all"],
+  clear: ["選択解除", "Clear selection"],
+  fit: ["全体表示", "Zoom to fit"],
+  zoomSelection: ["選択にズーム", "Zoom to selection"],
+  zoom100: ["100%", "100%"],
+  nudgeLeft: ["1px 移動", "Nudge 1px"],
+  nudgeRight: ["1px 移動", "Nudge 1px"],
+  nudgeUp: ["1px 移動", "Nudge 1px"],
+  nudgeDown: ["1px 移動", "Nudge 1px"],
+  nudgeLeft10: ["10px 移動", "Nudge 10px"],
+  nudgeRight10: ["10px 移動", "Nudge 10px"],
+  nudgeUp10: ["10px 移動", "Nudge 10px"],
+  nudgeDown10: ["10px 移動", "Nudge 10px"],
+  alignLeft: ["左揃え", "Align left"],
+  alignRight: ["右揃え", "Align right"],
+  alignTop: ["上揃え", "Align top"],
+  alignBottom: ["下揃え", "Align bottom"],
+  alignHCenter: ["水平中央", "Align h-centers"],
+  alignVCenter: ["垂直中央", "Align v-centers"],
+  flexOn: ["オートレイアウト", "Auto layout on"],
+  flexOff: ["オートレイアウト解除", "Auto layout off"],
+  zBack: ["背面へ", "Send backward"],
+  zFront: ["前面へ", "Bring forward"],
+  copyPng: ["PNG コピー", "Copy PNG"],
+  copyHtml: ["HTML コピー", "Copy HTML"],
+  search: ["レイヤー検索", "Search layers"],
+  palette: ["コマンドパレット", "Command palette"],
+  chat: ["AI チャット", "AI chat"],
+  save: ["保存", "Save"],
+  cheat: ["チートシート", "Cheat sheet"],
+  cut: ["カット", "Cut"],
+  paste: ["ペースト", "Paste"],
+  toolV: ["移動ツール", "Move tool"],
+  toolH: ["ハンドツール", "Hand tool"],
+  toolF: ["フレームツール", "Frame tool"],
+  toolT: ["テキストツール", "Text tool"],
+  toolC: ["コメントツール", "Comment tool"],
+  toolA: ["アセット", "Assets"],
+  toolR: ["長方形ツール", "Rectangle tool"],
+  toolO: ["楕円ツール", "Ellipse tool"],
+  toolZ: ["ズームツール", "Zoom tool"],
+};
+
 export function CheatSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   if (!open) return null;
   return (
     <div
@@ -208,7 +265,9 @@ export function CheatSheet({ open, onClose }: { open: boolean; onClose: () => vo
                 >
                   {keys}
                 </td>
-                <td style={{ padding: "3px 0", color: "var(--cul-muted, #8a8f98)" }}>{action}</td>
+                <td style={{ padding: "3px 0", color: "var(--cul-muted, #8a8f98)" }}>
+                  {ACTION_LABELS[action]?.[lang === "ja" ? 0 : 1] ?? action}
+                </td>
               </tr>
             ))}
           </tbody>

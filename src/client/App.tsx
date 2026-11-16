@@ -1,6 +1,6 @@
 import { fitCamera, worldToScreen, type GpuCanvas as GpuCanvasApi } from "gpucanvas";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { DocAction, DocNode, Document } from "../domain/document";
+import { descendants, type DocAction, type DocNode, type Document } from "../domain/document";
 import "./app.css";
 import { AssetsPanel } from "./AssetsPanel";
 import { ChatPanel } from "./ChatPanel";
@@ -67,11 +67,22 @@ function Shell({ appName, bridgeToken }: { appName: string; bridgeToken: string 
   const [onboarded, setOnboarded] = useState(() => Boolean(localStorage.getItem("cul_onboarded")));
   const [syncEnabled, setSyncEnabled] = useState(() => localStorage.getItem("cul_sync") === "1");
   const [importedFiles, setImportedFiles] = useState<string[]>([]);
+  const [narrow, setNarrow] = useState(() => window.innerWidth < 1100);
+  const [figReport, setFigReport] = useState<
+    { nodeId: string; type: string; reason: string; approximation: string }[] | null
+  >(null);
+  const clipboard = useRef<{ nodes: Record<string, DocNode>; roots: string[] } | null>(null);
   const figInput = useRef<HTMLInputElement>(null);
   const docRef = useRef(doc);
   docRef.current = doc;
   const selectionRef = useRef(selection);
   selectionRef.current = selection;
+
+  useEffect(() => {
+    const onResize = () => setNarrow(window.innerWidth < 1100);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   useEffect(() => {
     const mql = window.matchMedia("(prefers-color-scheme: dark)");
@@ -164,6 +175,7 @@ function Shell({ appName, bridgeToken }: { appName: string; bridgeToken: string 
         });
         if (result.report.length > 0) {
           console.info("[fig-import] fidelity report", result.report);
+          setFigReport(result.report);
         }
         if (canvas) setTimeout(() => fitDocument(canvas, docRef.current), 50);
       } catch (error) {
@@ -229,16 +241,63 @@ function Shell({ appName, bridgeToken }: { appName: string; bridgeToken: string 
         case "duplicate":
           if (ids.length) dispatch({ type: "duplicate", ids });
           break;
-        case "group":
-          if (ids.length) dispatch({ type: "group", ids, name: "Group" });
+        case "cut": {
+          if (!ids.length) break;
+          const subset: Record<string, DocNode> = {};
+          for (const id of ids)
+            for (const d of descendants(current, id)) subset[d] = current.nodes[d];
+          clipboard.current = { nodes: subset, roots: ids };
+          dispatch({ type: "remove", ids });
+          setSelection([]);
+          toast(t("toast.cut", { count: ids.length }), {
+            label: t("toast.undo"),
+            run: () => undo(),
+          });
           break;
-        case "ungroup":
-          if (ids[0] && current.nodes[ids[0]]?.kind === "frame")
-            dispatch({ type: "ungroup", id: ids[0] });
+        }
+        case "paste": {
+          const clip = clipboard.current;
+          if (!clip) break;
+          const remap = new Map(Object.keys(clip.nodes).map((id) => [id, crypto.randomUUID()]));
+          const nodes: Record<string, DocNode> = {};
+          for (const [oldId, node] of Object.entries(clip.nodes)) {
+            const id = remap.get(oldId)!;
+            const moved = clip.roots.includes(oldId)
+              ? { ...node, id, x: node.x + 24, y: node.y + 24 }
+              : { ...node, id };
+            nodes[id] =
+              moved.kind === "frame"
+                ? { ...moved, children: moved.children.map((c) => remap.get(c) ?? c) }
+                : moved;
+          }
+          const roots = clip.roots.map((id) => remap.get(id)!);
+          dispatch({ type: "merge", nodes, roots });
+          setSelection(roots);
+          toast(t("toast.paste", { count: roots.length }));
           break;
-        case "frameSelection":
-          if (ids.length) dispatch({ type: "group", ids, name: "Frame" });
+        }
+        case "group": {
+          if (!ids.length) break;
+          const groupId = crypto.randomUUID();
+          dispatch({ type: "group", ids, name: "Group", id: groupId });
+          setSelection([groupId]);
           break;
+        }
+        case "ungroup": {
+          const frame = ids[0] ? current.nodes[ids[0]] : undefined;
+          if (frame?.kind === "frame") {
+            dispatch({ type: "ungroup", id: frame.id });
+            setSelection(frame.children);
+          }
+          break;
+        }
+        case "frameSelection": {
+          if (!ids.length) break;
+          const frameId = crypto.randomUUID();
+          dispatch({ type: "group", ids, name: "Frame", id: frameId });
+          setSelection([frameId]);
+          break;
+        }
         case "selectAll":
           setSelection(current.roots);
           break;
@@ -361,6 +420,7 @@ function Shell({ appName, bridgeToken }: { appName: string; bridgeToken: string 
           setPaletteOpen(true);
           break;
         case "chat":
+          setEditorFile(null);
           setChatOpen(true);
           break;
         case "save":
@@ -428,7 +488,10 @@ function Shell({ appName, bridgeToken }: { appName: string; bridgeToken: string 
         onZoom100={() => canvas && canvas.setCamera({ ...canvas.getCamera(), zoom: 1 })}
         onZoomIn={() => canvas && zoomDocument(canvas, 1.25)}
         onZoomOut={() => canvas && zoomDocument(canvas, 0.8)}
-        onChat={() => setChatOpen(true)}
+        onChat={() => {
+          setEditorFile(null);
+          setChatOpen(true);
+        }}
         chrome={chrome}
         onCycleChrome={() =>
           setChrome((c) => (c === "system" ? "light" : c === "light" ? "dark" : "system"))
@@ -443,59 +506,61 @@ function Shell({ appName, bridgeToken }: { appName: string; bridgeToken: string 
           if (next === "A") setLeftTab("assets");
         }}
       />
-      <div
-        className="cul-panel"
-        style={{
-          position: "absolute",
-          left: 64,
-          top: 60,
-          bottom: 32,
-          width: 240,
-          display: "flex",
-          flexDirection: "column",
-          zIndex: 20,
-        }}
-      >
-        <div className="cul-panel-header" style={{ gap: 4 }}>
-          {(["layers", "assets"] as const).map((tab) => (
-            <button
-              key={tab}
-              className="cul-btn"
-              style={{
-                fontSize: 11,
-                padding: "2px 8px",
-                background:
-                  leftTab === tab ? "var(--cul-accent-soft, rgba(139,92,246,0.15))" : undefined,
-              }}
-              onClick={() => setLeftTab(tab)}
-            >
-              {t(tab === "layers" ? "panel.layers" : "panel.assets")}
-            </button>
-          ))}
+      {!(narrow && chatOpen) && (
+        <div
+          className="cul-panel"
+          style={{
+            position: "absolute",
+            left: 64,
+            top: 60,
+            bottom: 32,
+            width: 240,
+            display: "flex",
+            flexDirection: "column",
+            zIndex: 20,
+          }}
+        >
+          <div className="cul-panel-header" style={{ gap: 4 }}>
+            {(["layers", "assets"] as const).map((tab) => (
+              <button
+                key={tab}
+                className="cul-btn"
+                style={{
+                  fontSize: 11,
+                  padding: "2px 8px",
+                  background:
+                    leftTab === tab ? "var(--cul-accent-soft, rgba(139,92,246,0.15))" : undefined,
+                }}
+                onClick={() => setLeftTab(tab)}
+              >
+                {t(tab === "layers" ? "panel.layers" : "panel.assets")}
+              </button>
+            ))}
+          </div>
+          {searchOpen && leftTab === "layers" && (
+            <input
+              autoFocus
+              className="cul-input-field"
+              style={{ margin: 8, fontSize: 12 }}
+              placeholder={t("search.layers")}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === "Escape" && setSearchOpen(false)}
+            />
+          )}
+          {leftTab === "layers" ? (
+            <LayersPanel
+              doc={doc}
+              selection={selection}
+              onSelect={setSelection}
+              dispatch={dispatch}
+              search={search}
+            />
+          ) : (
+            <AssetsPanel specs={specs} renderCell={renderCell} />
+          )}
         </div>
-        {searchOpen && leftTab === "layers" && (
-          <input
-            autoFocus
-            className="cul-input-field"
-            style={{ margin: 8, fontSize: 12 }}
-            placeholder={t("search.layers")}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => e.key === "Escape" && setSearchOpen(false)}
-          />
-        )}
-        {leftTab === "layers" ? (
-          <LayersPanel
-            doc={doc}
-            selection={selection}
-            onSelect={setSelection}
-            dispatch={dispatch}
-            search={search}
-          />
-        ) : (
-          <AssetsPanel specs={specs} renderCell={renderCell} />
-        )}
-      </div>
+      )}
       <div
         className="cul-panel"
         style={{
@@ -582,8 +647,8 @@ function Shell({ appName, bridgeToken }: { appName: string; bridgeToken: string 
             ))}
           </div>
         )}
-        {rightTab === "variables" && <DesignPanel canvas={canvas} cells={[]} />}
-        {rightTab === "marks" && <MarksPanel canvas={canvas} />}
+        {rightTab === "variables" && <DesignPanel canvas={canvas} cells={[]} embedded />}
+        {rightTab === "marks" && <MarksPanel canvas={canvas} embedded />}
       </div>
       <StatusBar
         selectionCount={selection.length}
@@ -639,6 +704,62 @@ function Shell({ appName, bridgeToken }: { appName: string; bridgeToken: string 
         />
       )}
       <CheatSheet open={cheatOpen} onClose={() => setCheatOpen(false)} />
+      {figReport && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.4)",
+            zIndex: 100,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onClick={() => setFigReport(null)}
+        >
+          <div
+            className="cul-panel"
+            style={{ width: 560, maxHeight: "70vh", overflow: "auto", padding: 16 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="cul-panel-header" style={{ padding: 0, marginBottom: 4 }}>
+              {t("report.title")}
+            </div>
+            <p className="cul-hint" style={{ margin: "0 0 10px" }}>
+              {t("report.sub", { count: figReport.length })}
+            </p>
+            <table style={{ width: "100%", fontSize: 11, borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ textAlign: "left" }}>
+                  <th style={{ padding: "3px 6px 3px 0" }}>{t("report.node")}</th>
+                  <th style={{ padding: "3px 6px" }}>{t("report.type")}</th>
+                  <th style={{ padding: "3px 6px" }}>{t("report.reason")}</th>
+                  <th style={{ padding: "3px 0 3px 6px" }}>{t("report.approx")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {figReport.map((entry, i) => (
+                  <tr key={i}>
+                    <td style={{ padding: "3px 6px 3px 0", fontFamily: "monospace" }}>
+                      {entry.nodeId}
+                    </td>
+                    <td style={{ padding: "3px 6px" }}>{entry.type}</td>
+                    <td style={{ padding: "3px 6px" }}>{entry.reason}</td>
+                    <td style={{ padding: "3px 0 3px 6px" }}>{entry.approximation}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <button
+              className="cul-btn"
+              style={{ marginTop: 12 }}
+              onClick={() => setFigReport(null)}
+            >
+              {t("report.close")}
+            </button>
+          </div>
+        </div>
+      )}
       {paletteOpen && (
         <Palette
           onClose={() => setPaletteOpen(false)}

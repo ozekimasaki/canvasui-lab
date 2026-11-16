@@ -43,7 +43,10 @@ export function buildSpecs(): {
     specs.push({
       id,
       title,
-      filePath: mod.path.replace(/^\//, "").replace(/\.stories\.tsx$/, ".tsx"),
+      filePath: (mod.path.includes("/src/")
+        ? mod.path.slice(mod.path.indexOf("/src/") + 1)
+        : mod.path.replace(/^\//, "")
+      ).replace(/\.stories\.tsx$/, ".tsx"),
       axes: deriveAxes(mod.meta),
       // Module namespace keys are alphabetically sorted by spec, so story order
       // is not source order; component defaults are the stable base instead.

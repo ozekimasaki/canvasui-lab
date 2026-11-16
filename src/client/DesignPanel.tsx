@@ -37,9 +37,17 @@ async function blobToImageData(blob: Blob): Promise<ImageData> {
   return ctx.getImageData(0, 0, surface.width, surface.height);
 }
 
-export function DesignPanel({ canvas, cells }: { canvas: GpuCanvas | null; cells: MatrixCell[] }) {
+export function DesignPanel({
+  canvas,
+  cells,
+  embedded,
+}: {
+  canvas: GpuCanvas | null;
+  cells: MatrixCell[];
+  embedded?: boolean;
+}) {
   const { t } = useI18n();
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(Boolean(embedded));
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [tokens, setTokens] = useState<TokenRow[]>([]);
@@ -200,7 +208,21 @@ export function DesignPanel({ canvas, cells }: { canvas: GpuCanvas | null; cells
   };
 
   return (
-    <div className="cul-panel" style={{ position: "absolute", left: 16, bottom: 16, width: 340 }}>
+    <div
+      className="cul-panel"
+      style={
+        embedded
+          ? {
+              position: "static",
+              width: "100%",
+              flex: 1,
+              minHeight: 0,
+              display: "flex",
+              flexDirection: "column",
+            }
+          : { position: "absolute", left: 16, bottom: 16, width: 340 }
+      }
+    >
       <button className="cul-panel-header" onClick={() => setOpen(!open)}>
         <PenTool size={14} />
         <span>{t("design.title")}</span>
@@ -210,7 +232,15 @@ export function DesignPanel({ canvas, cells }: { canvas: GpuCanvas | null; cells
         />
       </button>
       {open && (
-        <div className="cul-panel-body" style={{ maxHeight: "50vh", overflowY: "auto" }}>
+        <div
+          className="cul-panel-body"
+          style={{
+            maxHeight: embedded ? "none" : "50vh",
+            flex: embedded ? 1 : undefined,
+            minHeight: 0,
+            overflowY: "auto",
+          }}
+        >
           <section className="cul-section">
             <h4>
               <PenTool size={12} /> pen.dev
