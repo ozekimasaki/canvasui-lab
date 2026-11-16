@@ -1,3 +1,4 @@
+import { apiFetch } from "./api";
 import { createAgentView, type GpuCanvas } from "gpucanvas";
 import { connectLiveStream } from "void/live/client";
 import type { MatrixCell } from "../domain/matrix";
@@ -17,7 +18,7 @@ export function startStatePublish(
   const view = createAgentView(canvas);
   const publish = async () => {
     try {
-      await fetch("/api/bridge", {
+      await apiFetch("/api/bridge", {
         method: "POST",
         headers: headers(token),
         body: JSON.stringify({
@@ -51,7 +52,7 @@ export async function postBridgeResult(
   payload: unknown,
   token: string,
 ): Promise<void> {
-  await fetch("/api/bridge", {
+  await apiFetch("/api/bridge", {
     method: "POST",
     headers: headers(token),
     body: JSON.stringify({ kind: "result", commandId, payload }),

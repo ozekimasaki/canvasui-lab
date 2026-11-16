@@ -1,10 +1,13 @@
 import type { FactoryGate, SnapshotData, ValidatedSnapshot } from "../src/domain/brands";
+import type { DbPort, StoragePort } from "../src/ports";
 import { createSnapshotRepo } from "../src/repository/snapshotRepo";
 
 declare const gate: FactoryGate;
 declare const validated: ValidatedSnapshot;
+const dbStub = null as unknown as DbPort;
+const storageStub = null as unknown as StoragePort;
 
-const repo = createSnapshotRepo(gate);
+const repo = createSnapshotRepo(gate, dbStub, storageStub);
 void repo.save(validated);
 
 const raw: SnapshotData = {
@@ -19,14 +22,11 @@ const raw: SnapshotData = {
   contentHash: "deadbeef",
 };
 
-// @ts-expect-error PASSPORT DEFENSE: an unvalidated snapshot must be rejected by the repository
+// @ts-expect-error PASSPORT: unvalidated snapshot rejected
 void repo.save(raw);
-
-// @ts-expect-error GATE DEFENSE: a plain symbol cannot forge the FactoryGate
-createSnapshotRepo(Symbol("forged"));
-
-// @ts-expect-error GATE DEFENSE: an object cannot forge the FactoryGate
-createSnapshotRepo({});
-
-// @ts-expect-error GATE DEFENSE: a string cannot forge the FactoryGate
-createSnapshotRepo("gate");
+// @ts-expect-error GATE: plain symbol cannot forge
+createSnapshotRepo(Symbol("x"), dbStub, storageStub);
+// @ts-expect-error GATE: object cannot forge
+createSnapshotRepo({}, dbStub, storageStub);
+// @ts-expect-error GATE: string cannot forge
+createSnapshotRepo("gate", dbStub, storageStub);

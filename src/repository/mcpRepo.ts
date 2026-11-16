@@ -1,8 +1,9 @@
-import { db, desc, eq, lt } from "void/db";
+import { desc, eq, lt } from "drizzle-orm";
+import type { DbPort } from "../ports";
 import { bridgeResults, bridgeState, mcpOutbox, mcpSessions, sourcePatches } from "@schema";
 import type { FactoryGate, ValidatedASTPatch } from "../domain/brands";
 
-export function createMcpRepo(gate: FactoryGate) {
+export function createMcpRepo(gate: FactoryGate, db: DbPort) {
   if (!gate) throw new Error("FactoryGate required");
   return {
     async createSession(id: string, protocolVersion: string, clientInfo: string, ttlMs: number) {

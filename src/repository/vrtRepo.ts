@@ -1,8 +1,9 @@
-import { db, desc, eq } from "void/db";
+import { desc, eq } from "drizzle-orm";
+import type { DbPort } from "../ports";
 import { vrtResults, vrtRuns } from "@schema";
 import type { FactoryGate, ValidatedVrtRun } from "../domain/brands";
 
-export function createVrtRepo(gate: FactoryGate) {
+export function createVrtRepo(gate: FactoryGate, db: DbPort) {
   if (!gate) throw new Error("FactoryGate required");
   return {
     async saveRun(run: ValidatedVrtRun) {

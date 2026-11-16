@@ -23,6 +23,7 @@
     "scripts",
     "env.ts",
     "vite.config.ts",
+    "electron",
     "void.config.ts"
   ]
 }

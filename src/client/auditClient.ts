@@ -1,3 +1,4 @@
+import { apiFetch } from "./api";
 import {
   createAgentView,
   createMarks,
@@ -114,7 +115,7 @@ export async function runAudit(
     }),
     diff: diffSummary?.[cell.cellKey],
   }));
-  const res = await fetch("/api/audit", {
+  const res = await apiFetch("/api/audit", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ cells: payload }),
@@ -138,7 +139,7 @@ export async function runAudit(
 
 export async function loadAndDrawMarks(canvas: GpuCanvas, cells?: MatrixCell[]): Promise<void> {
   if (cells) rememberRects(canvas, cells);
-  const res = await fetch("/api/marks");
+  const res = await apiFetch("/api/marks");
   if (!res.ok) return;
   const rows = (await res.json()) as MarkRow[];
   const drawn = drawnFor(canvas);
@@ -154,7 +155,7 @@ export async function addHumanMark(
   text: string,
   severity: MarkRow["severity"],
 ): Promise<void> {
-  const res = await fetch("/api/marks", {
+  const res = await apiFetch("/api/marks", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ cellKey, targetElementId: null, kind: "pin", text, severity }),

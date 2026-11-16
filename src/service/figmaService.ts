@@ -1,4 +1,4 @@
-import { env } from "void/env";
+import type { EnvPort } from "../ports";
 import { z } from "zod";
 import type { ValidatedFigmaLink } from "../domain/brands";
 import { readPngDimensions } from "../domain/snapshot";
@@ -13,11 +13,15 @@ const requestSchema = z.object({
   scale: z.number().min(0.5).max(4).default(2),
 });
 
-export function createFigmaService(deps: { snapshots: SnapshotService; figma: FigmaRepo }) {
+export function createFigmaService(deps: {
+  snapshots: SnapshotService;
+  figma: FigmaRepo;
+  env: EnvPort;
+}) {
   return {
     async fetchFrameImages(input: unknown) {
       const req = requestSchema.parse(input);
-      const token = env.FIGMA_TOKEN;
+      const token = deps.env.get("FIGMA_TOKEN");
       if (!token) throw new ServiceError("FIGMA_TOKEN is not configured", 503);
       const url = `https://api.figma.com/v1/images/${req.fileKey}?ids=${encodeURIComponent(req.nodeIds.join(","))}&format=png&scale=${req.scale}`;
       const res = await fetch(url, { headers: { "X-Figma-Token": token } });

@@ -1,16 +1,16 @@
-import { and, db, desc, eq } from "void/db";
-import { storage } from "void/storage";
+import { and, desc, eq } from "drizzle-orm";
+import type { DbPort, StoragePort } from "../ports";
 import { snapshots } from "@schema";
 import type { FactoryGate, ValidatedSnapshot } from "../domain/brands";
 import { baselinePrefix, r2KeyFor } from "../domain/snapshot";
 
-export function createSnapshotRepo(gate: FactoryGate) {
+export function createSnapshotRepo(gate: FactoryGate, db: DbPort, storage: StoragePort) {
   if (!gate) throw new Error("FactoryGate required");
   return {
     async save(s: ValidatedSnapshot) {
       const r2Key = r2KeyFor(s.kind, s.source, s.componentId, s.cellKey, s.contentHash);
-      await storage.put(r2Key, s.png, { httpMetadata: { contentType: "image/png" } });
-      const [row] = await insertSnapshot(s, r2Key);
+      await storage.put(r2Key, s.png, { contentType: "image/png" });
+      const [row] = await insertSnapshot(db, s, r2Key);
       return row;
     },
     async latestBaseline(componentId: string, cellKey: string) {
@@ -54,20 +54,17 @@ export function createSnapshotRepo(gate: FactoryGate) {
       return db.select().from(snapshots).where(eq(snapshots.kind, "baseline"));
     },
     async png(r2Key: string): Promise<Uint8Array | null> {
-      const object = await storage.get(r2Key);
-      if (!object) return null;
-      return new Uint8Array(await object.arrayBuffer());
+      return storage.get(r2Key);
     },
     async deleteBaselinePrefix(componentId: string, cellKey: string) {
-      const listed = await storage.list({ prefix: baselinePrefix(componentId, cellKey) });
-      for (const obj of listed.objects) {
-        await storage.delete(obj.key);
+      for (const key of await storage.list(baselinePrefix(componentId, cellKey))) {
+        await storage.delete(key);
       }
     },
   };
 }
 
-function insertSnapshot(s: ValidatedSnapshot, r2Key: string) {
+function insertSnapshot(db: DbPort, s: ValidatedSnapshot, r2Key: string) {
   return db
     .insert(snapshots)
     .values({

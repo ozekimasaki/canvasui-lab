@@ -1,5 +1,5 @@
 import { defineHandler } from "void";
+import { services } from "../../src/factory/cf";
+import * as h from "../../src/resolve/api-health";
 
-export const GET = defineHandler(() => {
-  return { ok: true, service: "canvasui-lab" };
-});
+export const GET = defineHandler(h.GET(services));

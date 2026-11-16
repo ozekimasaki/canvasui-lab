@@ -1,8 +1,9 @@
-import { db, eq } from "void/db";
+import { eq } from "drizzle-orm";
+import type { DbPort } from "../ports";
 import { figmaLinks } from "@schema";
 import type { FactoryGate, ValidatedFigmaLink } from "../domain/brands";
 
-export function createFigmaRepo(gate: FactoryGate) {
+export function createFigmaRepo(gate: FactoryGate, db: DbPort) {
   if (!gate) throw new Error("FactoryGate required");
   return {
     async saveLink(link: ValidatedFigmaLink) {

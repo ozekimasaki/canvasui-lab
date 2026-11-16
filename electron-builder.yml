@@ -1,0 +1,17 @@
+appId: com.canvasui.lab
+productName: CanvasUI Lab
+directories:
+  output: release
+files:
+  - out/**
+  - db/migrations/**
+  - package.json
+asarUnpack:
+  - node_modules/better-sqlite3/**
+mac:
+  target:
+    - target: dmg
+      arch:
+        - arm64
+  category: public.app-category.developer-tools
+npmRebuild: true

@@ -4,6 +4,7 @@ import { ServiceError } from "../service/errors";
 export interface SourceRepo {
   read(filePath: string): Promise<{ content: string } | null>;
   write(patch: ValidatedASTPatch): Promise<{ afterHash: string }>;
+  create?(filePath: string, content: string): Promise<void>;
 }
 
 export function createOfflineSourceRepo(gate: FactoryGate): SourceRepo {

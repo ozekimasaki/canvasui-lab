@@ -1,19 +1,6 @@
 import { defineHandler } from "void";
-import { services } from "../../../src/factory";
-import { errorJson } from "../../../src/service/errors";
+import { services } from "../../../src/factory/cf";
+import * as h from "../../../src/resolve/api-vrt-runs";
 
-export const POST = defineHandler(async (c) => {
-  try {
-    return c.json(await services.vrt.submitRun(await c.req.json()));
-  } catch (error) {
-    return errorJson(error);
-  }
-});
-
-export const GET = defineHandler(async (c) => {
-  try {
-    return c.json(await services.vrt.listRuns());
-  } catch (error) {
-    return errorJson(error);
-  }
-});
+export const POST = defineHandler(h.POST(services));
+export const GET = defineHandler(h.GET(services));

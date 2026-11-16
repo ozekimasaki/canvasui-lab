@@ -1,13 +1,5 @@
 import { defineHandler } from "void";
-import { services } from "../../../src/factory";
-import { errorJson } from "../../../src/service/errors";
+import { services } from "../../../src/factory/cf";
+import * as h from "../../../src/resolve/api-marks-clear-ai";
 
-export const POST = defineHandler(async () => {
-  try {
-    return new Response(JSON.stringify(await services.marks.clearAi()), {
-      headers: { "content-type": "application/json" },
-    });
-  } catch (error) {
-    return errorJson(error);
-  }
-});
+export const POST = defineHandler(h.POST(services));

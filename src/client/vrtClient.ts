@@ -1,3 +1,4 @@
+import { apiFetch } from "./api";
 import { diffImages, toBlob, type GpuCanvas } from "gpucanvas";
 import type { DiffBounds } from "../domain/brands";
 import type { MatrixCell } from "../domain/matrix";
@@ -82,7 +83,7 @@ async function uploadSnapshot(
   form.set("height", String(meta.height));
   form.set("scale", String(meta.scale));
   form.set("png", png, "snapshot.png");
-  const res = await fetch("/api/snapshots", { method: "POST", body: form });
+  const res = await apiFetch("/api/snapshots", { method: "POST", body: form });
   if (!res.ok) {
     const data: unknown = await res.json().catch(() => null);
     const message =

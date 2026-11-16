@@ -1,4 +1,4 @@
-import { services } from "../../../src/factory";
+import type { Services } from "../../../src/factory";
 
 export interface JsonRpcMessage {
   jsonrpc?: string;
@@ -15,6 +15,7 @@ function rpcError(id: string | number | null | undefined, code: number, message:
 }
 
 export async function dispatchRpc(
+  services: Services,
   sessionId: string | null,
   msg: JsonRpcMessage,
 ): Promise<{ response?: unknown; newSession?: string }> {
@@ -93,14 +94,14 @@ export async function dispatchRpc(
   return { response: rpcError(id, -32601, `method not found: ${method}`) };
 }
 
-export async function dispatchBatch(sessionId: string | null, body: unknown) {
+export async function dispatchBatch(services: Services, sessionId: string | null, body: unknown) {
   if (Array.isArray(body)) {
     const out = [];
     for (const item of body) {
-      const { response } = await dispatchRpc(sessionId, item as JsonRpcMessage);
+      const { response } = await dispatchRpc(services, sessionId, item as JsonRpcMessage);
       if (response) out.push(response);
     }
     return out;
   }
-  return dispatchRpc(sessionId, body as JsonRpcMessage);
+  return dispatchRpc(services, sessionId, body as JsonRpcMessage);
 }

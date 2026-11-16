@@ -1,13 +1,5 @@
 import { defineHandler } from "void";
-import { services } from "../../../src/factory";
-import { errorJson } from "../../../src/service/errors";
+import { services } from "../../../src/factory/cf";
+import * as h from "../../../src/resolve/api-figma-links";
 
-export const GET = defineHandler(async () => {
-  try {
-    return new Response(JSON.stringify(await services.figma.listLinks()), {
-      headers: { "content-type": "application/json" },
-    });
-  } catch (error) {
-    return errorJson(error);
-  }
-});
+export const GET = defineHandler(h.GET(services));

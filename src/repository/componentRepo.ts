@@ -1,8 +1,9 @@
-import { db, eq } from "void/db";
+import { eq } from "drizzle-orm";
+import type { DbPort } from "../ports";
 import { components } from "@schema";
 import type { FactoryGate, ValidatedComponentSpec } from "../domain/brands";
 
-export function createComponentRepo(gate: FactoryGate) {
+export function createComponentRepo(gate: FactoryGate, db: DbPort) {
   if (!gate) throw new Error("FactoryGate required");
   return {
     async upsertMany(specs: readonly ValidatedComponentSpec[]) {

@@ -1,5 +1,4 @@
-import { ai } from "void/ai";
-import { UsageLimit } from "void/limits";
+import type { AiPort } from "../ports";
 import { z } from "zod";
 import type { ValidatedAuditMark } from "../domain/brands";
 import type { MarkRepo } from "../repository/markRepo";
@@ -26,14 +25,14 @@ const aiMarkSchema = z.object({
 
 const SYSTEM_PROMPT = `You are a UI auditor for a design system matrix. You receive a JSON tree of live UI cells (from an agent view) plus visual-regression diff info. Identify concrete problems: broken layout, clipped or overflowing text, missing states, contrast issues, inconsistency with design tokens, or regressions indicated by diffs. Respond ONLY with a JSON array (no prose, no code fences) of objects: {"cellKey": string, "targetElementId": string|null, "kind": "pin"|"note", "text": string (one actionable sentence), "severity": "info"|"warning"|"error"}. Use element ids from the tree when pointing at a specific element. Return [] when nothing is wrong. Maximum 10 marks.`;
 
-export function createAuditService(deps: { marks: MarkRepo }) {
+export function createAuditService(deps: { marks: MarkRepo; ai: AiPort }) {
   return {
     async audit(input: unknown) {
       const { cells } = requestSchema.parse(input);
       const userPrompt = JSON.stringify({ cells });
       let responseText: string;
       try {
-        const result = await ai.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
+        const result = await deps.ai.run("@cf/meta/llama-3.3-70b-instruct-fp8-fast", {
           messages: [
             { role: "system", content: SYSTEM_PROMPT },
             { role: "user", content: userPrompt },
@@ -47,7 +46,7 @@ export function createAuditService(deps: { marks: MarkRepo }) {
               : JSON.stringify(result.response)
             : "";
       } catch (error) {
-        if (error instanceof UsageLimit) {
+        if (error instanceof Error && error.name === "UsageLimit") {
           throw new ServiceError("Workers AI usage limit reached. Try again later.", 429);
         }
         throw error;

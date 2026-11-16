@@ -15,21 +15,21 @@ describe("remote MCP server (SDK client compliance)", () => {
     expect(names).toContain("canvas.cells");
     expect(names).toContain("source.propose");
     expect(names).toContain("pr.open");
-      await fetch(`${BASE}/api/components`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          specs: [
-            {
-              id: "button",
-              title: "Button",
-              filePath: "src/components/Button/Button.tsx",
-              axes: { size: ["sm", "md"] },
-              defaultArgs: {},
-            },
-          ],
-        }),
-      });
+    await fetch(`${BASE}/api/components`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        specs: [
+          {
+            id: "button",
+            title: "Button",
+            filePath: "src/components/Button/Button.tsx",
+            axes: { size: ["sm", "md"] },
+            defaultArgs: {},
+          },
+        ],
+      }),
+    });
     const cells = await client.callTool({ name: "canvas.cells", arguments: {} });
     const text = (cells.content as { type: string; text: string }[])[0].text;
     expect(JSON.parse(text).length).toBeGreaterThan(0);

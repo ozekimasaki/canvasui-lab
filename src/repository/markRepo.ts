@@ -1,8 +1,9 @@
-import { db, desc, eq } from "void/db";
+import { desc, eq } from "drizzle-orm";
+import type { DbPort } from "../ports";
 import { marks } from "@schema";
 import type { FactoryGate, ValidatedAuditMark } from "../domain/brands";
 
-export function createMarkRepo(gate: FactoryGate) {
+export function createMarkRepo(gate: FactoryGate, db: DbPort) {
   if (!gate) throw new Error("FactoryGate required");
   return {
     async saveMany(items: readonly ValidatedAuditMark[]) {

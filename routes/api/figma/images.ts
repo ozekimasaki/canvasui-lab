@@ -1,11 +1,5 @@
 import { defineHandler } from "void";
-import { services } from "../../../src/factory";
-import { errorJson } from "../../../src/service/errors";
+import { services } from "../../../src/factory/cf";
+import * as h from "../../../src/resolve/api-figma-images";
 
-export const POST = defineHandler(async (c) => {
-  try {
-    return c.json(await services.figma.fetchFrameImages(await c.req.json()));
-  } catch (error) {
-    return errorJson(error);
-  }
-});
+export const POST = defineHandler(h.POST(services));

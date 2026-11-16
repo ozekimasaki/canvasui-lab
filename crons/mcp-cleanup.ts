@@ -1,5 +1,5 @@
 import { defineScheduled } from "void";
-import { services } from "../src/factory";
+import { services } from "../src/factory/cf";
 
 export const cron = "0 * * * *";
 

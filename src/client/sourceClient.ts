@@ -1,3 +1,4 @@
+import { apiFetch } from "./api";
 import type { SourceEdit } from "../domain/brands";
 
 export interface SourceFileView {
@@ -12,7 +13,7 @@ export interface ProposedPatch {
 }
 
 async function post(body: unknown): Promise<unknown> {
-  const res = await fetch("/api/source", {
+  const res = await apiFetch("/api/source", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
@@ -29,7 +30,7 @@ async function post(body: unknown): Promise<unknown> {
 }
 
 export async function readSource(filePath: string): Promise<SourceFileView> {
-  const res = await fetch(`/api/source?path=${encodeURIComponent(filePath)}`);
+  const res = await apiFetch(`/api/source?path=${encodeURIComponent(filePath)}`);
   const data: unknown = await res.json();
   if (!res.ok) {
     const message =

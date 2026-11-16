@@ -1,10 +1,10 @@
-import { live } from "../live";
+import type { LivePort } from "../ports";
 import type { McpRepo } from "../repository/mcpRepo";
 import { ServiceError } from "./errors";
 
 const POLL_MS = 250;
 
-export function createBridgeService(deps: { mcp: McpRepo }) {
+export function createBridgeService(deps: { mcp: McpRepo; live: LivePort }) {
   return {
     async putState(topic: string, payload: unknown) {
       return deps.mcp.putState(topic, JSON.stringify(payload ?? null));
@@ -18,7 +18,7 @@ export function createBridgeService(deps: { mcp: McpRepo }) {
     },
     async command<T>(kind: string, args: unknown, timeoutMs = 60_000): Promise<T> {
       const commandId = crypto.randomUUID();
-      await live.publish("canvas:bridge", { commandId, kind, args }, { type: "command" });
+      await deps.live.publish("canvas:bridge", { commandId, kind, args }, "command");
       const deadline = Date.now() + timeoutMs;
       while (Date.now() < deadline) {
         const row = await deps.mcp.takeResult(commandId);

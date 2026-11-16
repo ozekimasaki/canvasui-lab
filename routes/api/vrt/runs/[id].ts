@@ -1,13 +1,5 @@
 import { defineHandler } from "void";
-import { services } from "../../../../src/factory";
-import { errorJson } from "../../../../src/service/errors";
+import { services } from "../../../../src/factory/cf";
+import * as h from "../../../../src/resolve/api-vrt-runs-[id]";
 
-export const GET = defineHandler(async (c) => {
-  try {
-    const id = c.req.param("id");
-    if (!id) return c.json({ error: "id is required" }, 400);
-    return c.json(await services.vrt.runResults(id));
-  } catch (error) {
-    return errorJson(error);
-  }
-});
+export const GET = defineHandler(h.GET(services));

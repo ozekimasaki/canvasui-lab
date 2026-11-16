@@ -1,13 +1,5 @@
 import { defineHandler } from "void";
-import { services } from "../../../src/factory";
-import { errorJson } from "../../../src/service/errors";
+import { services } from "../../../src/factory/cf";
+import * as h from "../../../src/resolve/api-snapshots-history";
 
-export const GET = defineHandler(async (c) => {
-  try {
-    const componentId = c.req.query("componentId") ?? "";
-    const cellKey = c.req.query("cellKey") ?? "";
-    return c.json(await services.snapshots.history(componentId, cellKey));
-  } catch (error) {
-    return errorJson(error);
-  }
-});
+export const GET = defineHandler(h.GET(services));

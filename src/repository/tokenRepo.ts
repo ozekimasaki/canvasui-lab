@@ -1,8 +1,9 @@
-import { db, eq } from "void/db";
+import { eq } from "drizzle-orm";
+import type { DbPort } from "../ports";
 import { designTokens } from "@schema";
 import type { FactoryGate, ValidatedDesignToken } from "../domain/brands";
 
-export function createTokenRepo(gate: FactoryGate) {
+export function createTokenRepo(gate: FactoryGate, db: DbPort) {
   if (!gate) throw new Error("FactoryGate required");
   return {
     async upsertMany(tokens: readonly ValidatedDesignToken[]) {
