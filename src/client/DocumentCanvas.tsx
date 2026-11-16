@@ -166,7 +166,9 @@ function DocEditorBridge({
   const docRef = useRef(doc);
   docRef.current = doc;
   const canvas = useGpuCanvas();
-  const { selected, set } = useEditor({
+  const live = useRef<string[]>([]);
+  const attempted = useRef<string>("");
+  const { set } = useEditor({
     trigger: "click",
     color: "#8b5cf6",
     marquee: tool !== "H",
@@ -179,6 +181,12 @@ function DocEditorBridge({
       const id = docIdOf(layer);
       return id ? (docRef.current.nodes[id]?.name ?? null) : null;
     },
+    onChange: (layers) => {
+      const ids = layers.map((layer) => docIdOf(layer) ?? "").filter(Boolean);
+      live.current = ids;
+      attempted.current = ids.join(",");
+      onSelection(ids);
+    },
     onTransform: (event) => {
       const id = docIdOf(event.layers[0]);
       if (!id) return;
@@ -189,18 +197,20 @@ function DocEditorBridge({
       }
     },
   });
-  useEffect(() => {
-    onSelection(selected.map((layer) => docIdOf(layer) ?? "").filter(Boolean));
-  }, [selected, onSelection]);
+  // App selection is authoritative for panel-driven changes; the editor reports
+  // canvas-driven changes through onChange. Comparing against a live ref (not
+  // React state) avoids a one-render-delayed echo loop between the two.
   useEffect(() => {
     if (!canvas || !set) return;
-    const current = selected.map((layer) => docIdOf(layer) ?? "").filter(Boolean);
-    if (current.join(",") === selection.join(",")) return;
+    const key = selection.join(",");
+    if (live.current.join(",") === key || attempted.current === key) return;
+    attempted.current = key;
+    live.current = selection;
     const layers = selection
       .map((id) => canvas.surface.querySelector(`[data-docnode="${id}"]`))
       .filter((el): el is Element => Boolean(el));
     set(layers);
-  }, [selection, canvas, set, selected]);
+  }, [selection, canvas, set]);
   return null;
 }
 
