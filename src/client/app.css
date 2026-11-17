@@ -803,3 +803,11 @@ body {
     animation: none !important;
   }
 }
+
+.cul-panel-header .cul-btn {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.cul-panel-header {
+  overflow-x: auto;
+}
