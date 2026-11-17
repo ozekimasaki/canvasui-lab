@@ -5,6 +5,7 @@ import type { ComponentSpecData } from "../domain/brands";
 import type { Document } from "../domain/document";
 import { apiFetch } from "./api";
 import { useI18n } from "./i18n";
+import { translateError } from "./errors";
 import { applySource, proposeSource } from "./sourceClient";
 
 interface ChatAction {
@@ -95,7 +96,7 @@ export function ChatPanel({
       setActions((current) => current.filter((a) => a !== action));
       canvas?.invalidate();
     } catch (error) {
-      onToast(error instanceof Error ? error.message : t("toast.writeFailed"));
+      onToast(error instanceof Error ? translateError(error.message, t) : t("toast.writeFailed"));
     }
   };
 
@@ -148,7 +149,7 @@ export function ChatPanel({
         await new Promise((r) => setTimeout(r, 400));
       }
     } catch (error) {
-      onToast(error instanceof Error ? error.message : "heal failed");
+      onToast(error instanceof Error ? translateError(error.message, t) : "heal failed");
     } finally {
       setBusy(false);
     }
@@ -174,7 +175,7 @@ export function ChatPanel({
           className="cul-icon-btn"
           style={{ marginLeft: "auto" }}
           onClick={onClose}
-          aria-label="Close chat"
+          aria-label={t("chat.close")}
         >
           <X size={14} />
         </button>
@@ -240,7 +241,7 @@ export function ChatPanel({
           className="cul-btn"
           onClick={() => void heal()}
           disabled={busy}
-          title="Self-heal selection (max 3 iterations)"
+          title={t("chat.heal")}
         >
           <Wrench size={12} />
         </button>
@@ -256,7 +257,7 @@ export function ChatPanel({
           className="cul-icon-btn"
           onClick={() => void send()}
           disabled={busy || !input.trim()}
-          aria-label="Send"
+          aria-label={t("chat.send")}
         >
           <Send size={14} />
         </button>

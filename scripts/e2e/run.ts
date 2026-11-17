@@ -11,6 +11,9 @@ import * as catalogSpec from "./specs/catalog";
 import * as layoutSpec from "./specs/layout";
 import * as figSpec from "./specs/fig";
 import * as syncSpec from "./specs/sync";
+import * as a11ySpec from "./specs/a11y";
+import * as i18nSpec from "./specs/i18n";
+import * as buttonsSpec from "./specs/buttons";
 
 export interface Check {
   name: string;
@@ -116,6 +119,9 @@ async function main() {
       ["layout", layoutSpec],
       ["fig", figSpec],
       ["sync", syncSpec],
+      ["a11y", a11ySpec],
+      ["i18n", i18nSpec],
+      ["buttons", buttonsSpec],
     ];
     const only = (process.argv.find((a) => a.startsWith("--only=")) ?? "")
       .slice(7)

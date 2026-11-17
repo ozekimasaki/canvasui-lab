@@ -22,6 +22,8 @@ import { ToolRail } from "./ToolRail";
 import { TopBar } from "./TopBar";
 import type { ChromeTheme } from "./Toolbar";
 import { useDocument } from "./useDocument";
+import { useTabs } from "./useTabs";
+import { Modal } from "./Modal";
 import { useSync } from "./useSync";
 
 const EditorPanel = lazy(() => import("./EditorPanel"));
@@ -52,7 +54,13 @@ function Shell({ appName, bridgeToken }: { appName: string; bridgeToken: string 
   const [selection, setSelection] = useState<string[]>([]);
   const [canvas, setCanvas] = useState<GpuCanvasApi | null>(null);
   const [leftTab, setLeftTab] = useState<"layers" | "assets">("layers");
+  const leftTabs = useTabs(["layers", "assets"] as const, leftTab, setLeftTab);
   const [rightTab, setRightTab] = useState<"design" | "code" | "variables" | "marks">("design");
+  const rightTabs = useTabs(
+    ["design", "code", "variables", "marks"] as const,
+    rightTab,
+    setRightTab,
+  );
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [paletteOpen, setPaletteOpen] = useState(false);
@@ -212,7 +220,7 @@ function Shell({ appName, bridgeToken }: { appName: string; bridgeToken: string 
         }
         if (canvas) setTimeout(() => fitDocument(canvas, docRef.current), 50);
       } catch (error) {
-        toast(error instanceof Error ? error.message : "import failed");
+        toast(error instanceof Error ? translateError(error.message, t) : "import failed");
       }
     },
     [dispatch, toast, t, undo, canvas],
@@ -615,12 +623,14 @@ function Shell({ appName, bridgeToken }: { appName: string; bridgeToken: string 
           zIndex: 20,
         }}
       >
-        <div className="cul-panel-header" style={{ gap: 4 }}>
+        <div className="cul-panel-header" style={{ gap: 4 }} {...rightTabs}>
           {(["design", "code", "variables", "marks"] as const).map((tab) => (
             <button
               key={tab}
+              role="tab"
+              aria-selected={rightTab === tab}
+              tabIndex={rightTab === tab ? 0 : -1}
               className="cul-btn"
-              aria-pressed={rightTab === tab}
               onClick={() => setRightTab(tab)}
             >
               {t(

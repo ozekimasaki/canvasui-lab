@@ -296,8 +296,8 @@ body {
 }
 .cul-badge-gpu,
 .cul-badge-good {
-  background: #05966922;
-  color: #059669;
+  background: #04785722;
+  color: #047857;
 }
 .cul-badge-bad {
   background: #dc262622;
@@ -325,8 +325,8 @@ body {
 }
 :root[data-chrome="light"] .cul-badge-gpu,
 :root[data-chrome="light"] .cul-badge-good {
-  background: #05966922;
-  color: #059669;
+  background: #04785722;
+  color: #047857;
 }
 :root[data-chrome="light"] .cul-badge-bad {
   background: #dc262622;
@@ -748,9 +748,9 @@ body {
 
 /* unified chrome tokens + button system (single accent, two sizes) */
 :root {
-  --cul-accent: #8b5cf6;
-  --cul-accent-hover: #7c3aed;
-  --cul-accent-soft: #8b5cf61f;
+  --cul-accent: #7c3aed;
+  --cul-accent-hover: #6d28d9;
+  --cul-accent-soft: #7c3aed1f;
   --cul-bg: var(--chrome-bg);
   --cul-surface: var(--chrome-solid);
   --cul-surface2: var(--chrome-btn-bg);

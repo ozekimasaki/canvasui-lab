@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useI18n } from "./i18n";
+import { Modal } from "./Modal";
 
 export type ShortcutAction =
   | "undo"
@@ -239,47 +240,26 @@ export function CheatSheet({ open, onClose }: { open: boolean; onClose: () => vo
   const { t, lang } = useI18n();
   if (!open) return null;
   return (
-    <div
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.4)",
-        zIndex: 100,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-      onClick={onClose}
-    >
-      <div
-        className="cul-panel"
-        style={{ width: 420, maxHeight: "70vh", overflow: "auto", padding: 16 }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="cul-panel-header" style={{ padding: 0, marginBottom: 12 }}>
-          {t("cheat.title")}
-        </div>
-        <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
-          <tbody>
-            {SHORTCUT_TABLE.map(({ keys, action }) => (
-              <tr key={action + keys}>
-                <td
-                  style={{
-                    padding: "3px 8px 3px 0",
-                    fontFamily: "monospace",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {keys}
-                </td>
-                <td style={{ padding: "3px 0", color: "var(--cul-muted, #8a8f98)" }}>
-                  {ACTION_LABELS[action]?.[lang === "ja" ? 0 : 1] ?? action}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <Modal label={t("cheat.title")} onClose={onClose} width={420}>
+      <div className="cul-panel-header" style={{ padding: 0, marginBottom: 12 }}>
+        {t("cheat.title")}
       </div>
-    </div>
+      <table style={{ width: "100%", fontSize: 12, borderCollapse: "collapse" }}>
+        <tbody>
+          {SHORTCUT_TABLE.map(({ keys, action }) => (
+            <tr key={action + keys}>
+              <td
+                style={{ padding: "3px 8px 3px 0", fontFamily: "monospace", whiteSpace: "nowrap" }}
+              >
+                {keys}
+              </td>
+              <td style={{ padding: "3px 0", color: "var(--cul-muted)" }}>
+                {ACTION_LABELS[action]?.[lang === "ja" ? 0 : 1] ?? action}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Modal>
   );
 }

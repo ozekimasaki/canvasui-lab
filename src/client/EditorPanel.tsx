@@ -3,6 +3,7 @@ import { Code2, Save, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { applySource, proposeSource, readSource } from "./sourceClient";
 import { useI18n } from "./i18n";
+import { translateError } from "./errors";
 
 export default function EditorPanel({
   filePath,
@@ -65,7 +66,9 @@ export default function EditorPanel({
         editor;
       setStatus("");
     })().catch((error: unknown) => {
-      setStatus(error instanceof Error ? error.message : "editor failed to load");
+      setStatus(
+        error instanceof Error ? translateError(error.message, t) : "editor failed to load",
+      );
     });
     return () => {
       disposed = true;
@@ -86,7 +89,7 @@ export default function EditorPanel({
       onApplied(t("editor.applied", { count: patch.edits.length, file: filePath }));
       onClose();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "apply failed");
+      setStatus(error instanceof Error ? translateError(error.message, t) : "apply failed");
     } finally {
       setBusy(false);
     }

@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import { apiFetch } from "./api";
 import { useI18n } from "./i18n";
+import { translateError } from "./errors";
 import { fitCamera, zoomAt, type GpuCanvas as GpuCanvasApi } from "gpucanvas";
 import {
   CanvasNode,
@@ -80,6 +81,8 @@ export function MatrixCanvas({
   onOpenDocument?: () => void;
 }) {
   const { t } = useI18n();
+  const statusError = (error: unknown, fallback: string) =>
+    setStatus(error instanceof Error ? translateError(error.message, t) : fallback);
   const { specs, renderCell } = useMemo(buildSpecs, []);
   const cells = useMemo(() => {
     const base = layoutMatrix(specs);
@@ -228,7 +231,7 @@ export function MatrixCanvas({
         setStatus(t("status.propWritten", { name, file: spec.filePath }));
         canvas?.invalidate();
       } catch (error) {
-        setStatus(error instanceof Error ? error.message : t("status.propFailed"));
+        statusError(error, t("status.propFailed"));
       } finally {
         setBusy(false);
       }
@@ -262,7 +265,7 @@ export function MatrixCanvas({
       setChangedCount(result.changedCellKeys.length);
       setStatus(t("status.vrtDone", { count: result.changedCellKeys.length }));
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : t("status.vrtFailed"));
+      statusError(error, t("status.vrtFailed"));
     } finally {
       setProgress(null);
       setBusy(false);
@@ -277,7 +280,7 @@ export function MatrixCanvas({
       const result = await runAudit(canvas, cells);
       setStatus(t("status.auditDone", { count: result.count }));
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : t("status.auditFailed"));
+      statusError(error, t("status.auditFailed"));
     } finally {
       setBusy(false);
     }
@@ -290,7 +293,7 @@ export function MatrixCanvas({
       await approveBaseline(canvas, selectedCell);
       setStatus(t("status.baseline", { key: selectedCell.cellKey }));
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : t("status.baselineFailed"));
+      statusError(error, t("status.baselineFailed"));
     } finally {
       setBusy(false);
     }
@@ -303,7 +306,7 @@ export function MatrixCanvas({
         await addHumanMark(canvas, selectedCell.cellKey, selectedElement, text, severity);
         setStatus(t("status.notePinned"));
       } catch (error) {
-        setStatus(error instanceof Error ? error.message : t("status.noteFailed"));
+        statusError(error, t("status.noteFailed"));
       }
     },
     [canvas, selectedCell, selectedElement],
@@ -469,7 +472,11 @@ export function MatrixCanvas({
                 }}
               >
                 <span>{run.createdAt}</span>
-                <span>{runDetail?.id === run.id ? `${runDetail.changed} changed` : ""}</span>
+                <span>
+                  {runDetail?.id === run.id
+                    ? t("history.changed", { count: runDetail.changed })
+                    : ""}
+                </span>
               </button>
             ))}
           </div>

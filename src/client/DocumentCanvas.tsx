@@ -277,6 +277,10 @@ export function DocumentCanvas({
   const draftRef = useRef<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
 
   useEffect(() => {
+    if (canvas) {
+      canvas.surface.setAttribute("role", "application");
+      canvas.surface.setAttribute("aria-label", "Canvas");
+    }
     onCanvas(canvas);
     canvas?.setBackground(chrome === "dark" ? "#0b0d10" : "#f4f5f7");
   }, [canvas, chrome, onCanvas]);
@@ -700,7 +704,8 @@ export function DocumentCanvas({
             autoFocus
             className="cul-input-field"
             style={{ width: "100%" }}
-            placeholder="Comment…"
+            placeholder={t("doc.comment")}
+            aria-label={t("doc.comment")}
             value={comment.text}
             onChange={(e) => setComment({ ...comment, text: e.target.value })}
             onKeyDown={(e) => {

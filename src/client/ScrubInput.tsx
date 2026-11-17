@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 
 export function ScrubInput({
   label,
@@ -18,9 +18,11 @@ export function ScrubInput({
   title?: string;
 }) {
   const [dragging, setDragging] = useState(false);
+  const id = useId();
   const start = useRef({ x: 0, v: 0 });
   return (
     <label
+      htmlFor={id}
       style={{
         display: "flex",
         alignItems: "center",
@@ -55,6 +57,7 @@ export function ScrubInput({
         {label}
       </span>
       <input
+        id={id}
         className="cul-input-field"
         style={{ width: "100%", padding: "2px 4px", fontSize: 11 }}
         type="number"

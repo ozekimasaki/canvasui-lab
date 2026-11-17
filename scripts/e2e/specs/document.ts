@@ -111,7 +111,7 @@ export async function run(ctx: Ctx): Promise<void> {
   check(
     "C comment overlay",
     await cdp.evalJs(
-      `Boolean([...document.querySelectorAll('input')].find(i => i.placeholder === 'Comment…'))`,
+      `Boolean([...document.querySelectorAll('input')].find(i => (i.placeholder === 'Comment…' || i.placeholder === 'コメント…')))`,
     ),
   );
   await cdp.key("Escape", 27);

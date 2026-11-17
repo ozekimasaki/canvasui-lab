@@ -12,6 +12,7 @@ import {
   ZoomOut,
 } from "lucide-react";
 import { useI18n } from "./i18n";
+import { useTabs } from "./useTabs";
 import type { ChromeTheme } from "./Toolbar";
 
 export function TopBar({
@@ -56,6 +57,7 @@ export function TopBar({
   onToggleSync: () => void;
 }) {
   const { t, lang, setLang } = useI18n();
+  const modeTabs = useTabs(["document", "catalog"] as const, mode, setMode);
   return (
     <div
       className="cul-toolbar"
@@ -80,7 +82,7 @@ export function TopBar({
         key={docName}
         onBlur={(e) => e.target.value && e.target.value !== docName && onRename(e.target.value)}
         onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-        aria-label="Document name"
+        aria-label={t("topbar.docName")}
       />
       <div
         role="tablist"
@@ -96,6 +98,7 @@ export function TopBar({
             key={m}
             role="tab"
             aria-selected={mode === m}
+            tabIndex={mode === m ? 0 : -1}
             title={t(m === "document" ? "mode.document.tip" : "mode.catalog.tip")}
             onClick={() => setMode(m)}
             style={{
@@ -131,13 +134,13 @@ export function TopBar({
           <Redo2 size={14} />
         </button>
         <span style={{ width: 1, height: 16, background: "var(--cul-border, #e2e4e8)" }} />
-        <button className="cul-icon-btn" onClick={onZoomOut} aria-label="Zoom out">
+        <button className="cul-icon-btn" onClick={onZoomOut} aria-label={t("topbar.zoomOut")}>
           <ZoomOut size={14} />
         </button>
         <button className="cul-btn" onClick={onZoom100} title={t("zoom100")}>
           {Math.round(zoom * 100)}%
         </button>
-        <button className="cul-icon-btn" onClick={onZoomIn} aria-label="Zoom in">
+        <button className="cul-icon-btn" onClick={onZoomIn} aria-label={t("topbar.zoomIn")}>
           <ZoomIn size={14} />
         </button>
         <button className="cul-icon-btn" onClick={onFit} title={t("fit")} aria-label={t("fit")}>
@@ -160,7 +163,7 @@ export function TopBar({
           className="cul-icon-btn"
           onClick={onCycleChrome}
           title={`Theme: ${chrome}`}
-          aria-label="Color theme"
+          aria-label={t("topbar.theme")}
         >
           {chrome === "system" ? (
             <Monitor size={14} />

@@ -14,6 +14,7 @@ import type { ComponentSpecData } from "../domain/brands";
 import type { DocAction, Document, FlexLayout } from "../domain/document";
 import { flexStyle } from "./DocumentCanvas";
 import { useI18n } from "./i18n";
+import { translateError } from "./errors";
 import { ScrubInput } from "./ScrubInput";
 import { applySource, proposeSource } from "./sourceClient";
 
@@ -106,7 +107,7 @@ export function PropertiesPanel({
       onToast(t("toast.propWritten", { file: spec.filePath }));
       canvas?.invalidate();
     } catch (error) {
-      onToast(error instanceof Error ? error.message : t("toast.writeFailed"));
+      onToast(error instanceof Error ? translateError(error.message, t) : t("toast.writeFailed"));
     }
   };
 

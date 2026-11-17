@@ -30,7 +30,15 @@ export function Onboarding({
         background: "color-mix(in srgb, var(--cul-bg, #f4f5f7) 72%, transparent)",
       }}
     >
-      <div className="cul-panel" style={{ width: 400, padding: 24, textAlign: "center" }}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("onboard.title")}
+        tabIndex={-1}
+        ref={(el) => el?.focus()}
+        className="cul-panel"
+        style={{ width: 400, padding: 24, textAlign: "center" }}
+      >
         <h2 style={{ margin: "0 0 6px", fontSize: 18 }}>{t("onboard.title")}</h2>
         <p className="cul-hint" style={{ margin: "0 0 18px" }}>
           {t("onboard.sub")}
