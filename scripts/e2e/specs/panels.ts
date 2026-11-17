@@ -66,6 +66,14 @@ export async function run(ctx: Ctx): Promise<void> {
   let d = await getDoc(ctx);
   const inst = Object.values(d.nodes).find((n) => n.kind === "instance");
   check("assets drag inserts instance", Boolean(inst));
+  const nat = await cdp.evalJs<{ w: number; h: number } | null>(
+    `(() => { const el = [...document.querySelectorAll('[data-docnode]')].find(e => e.getAttribute('data-kind') === 'instance'); const c = el?.firstElementChild; if (!c) return null; const r = c.getBoundingClientRect(); return { w: Math.ceil(r.width), h: Math.ceil(r.height) }; })()`,
+  );
+  check(
+    "instance sized to component natural size",
+    Boolean(inst && nat) && inst!.w === nat!.w && inst!.h === nat!.h,
+    JSON.stringify({ node: inst && [inst.w, inst.h], nat }),
+  );
   // instance prop select persists
   await btn(ctx, "レイヤー");
   await sleep(400);

@@ -8,6 +8,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import type { ComponentSpecData } from "../domain/brands";
 import type { DocNode, Document, FlexLayout, FrameNode } from "../domain/document";
 import type { MatrixCell } from "../domain/matrix";
@@ -302,6 +303,38 @@ export function DocumentCanvas({
       } as unknown as MatrixCell),
     [renderCell],
   );
+  const measureInstance = useCallback(
+    (componentId: string, overrides: Record<string, unknown>) => {
+      const probe = document.createElement("div");
+      probe.style.cssText = "position:absolute;left:-99999px;top:0;visibility:hidden;";
+      document.body.appendChild(probe);
+      let size = { w: 260, h: 160 };
+      probe.innerHTML = renderToStaticMarkup(renderInstance(componentId, overrides));
+      const el = probe.firstElementChild as HTMLElement | null;
+      if (el) {
+        const r = el.getBoundingClientRect();
+        if (r.width > 0 && r.height > 0)
+          size = { w: Math.max(8, Math.ceil(r.width)), h: Math.max(8, Math.ceil(r.height)) };
+      }
+      probe.remove();
+      return size;
+    },
+    [renderInstance],
+  );
+  const overridesSig = useRef<Record<string, string>>({});
+  useEffect(() => {
+    for (const node of Object.values(doc.nodes)) {
+      if (node.kind !== "instance") continue;
+      const sig = JSON.stringify(node.overrides ?? {});
+      const prev = overridesSig.current[node.id];
+      overridesSig.current[node.id] = sig;
+      if (prev === undefined || prev === sig) continue;
+      const size = measureInstance(node.componentId, node.overrides ?? {});
+      if (Math.abs(size.w - node.w) > 1 || Math.abs(size.h - node.h) > 1) {
+        onTransform(node.id, { x: node.x, y: node.y, w: size.w, h: size.h }, "resize");
+      }
+    }
+  }, [doc, measureInstance, onTransform]);
 
   useEffect(() => {
     if (!canvas) return;
@@ -466,8 +499,7 @@ export function DocumentCanvas({
         componentId,
         x: p.x,
         y: p.y,
-        w: 260,
-        h: 160,
+        ...measureInstance(componentId, {}),
         overrides: {},
       });
     };
