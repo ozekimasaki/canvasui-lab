@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import { apiFetch } from "./api";
 import { useI18n } from "./i18n";
 import { fitCamera, zoomAt, type GpuCanvas as GpuCanvasApi } from "gpucanvas";
@@ -110,6 +111,9 @@ export function MatrixCanvas({
   const [changedCount, setChangedCount] = useState<number | null>(null);
   const [chrome, setChrome] = useState<ChromeTheme>("system");
   const [editorFile, setEditorFile] = useState<string | null>(null);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [runs, setRuns] = useState<{ id: string; createdAt: string }[]>([]);
+  const [runDetail, setRunDetail] = useState<{ id: string; changed: number } | null>(null);
   const [systemDark, setSystemDark] = useState(
     () => window.matchMedia("(prefers-color-scheme: dark)").matches,
   );
@@ -371,6 +375,13 @@ export function MatrixCanvas({
         onRunVrt={() => void handleVrt()}
         onRunAudit={() => void handleAudit()}
         onOpenDocument={onOpenDocument}
+        onHistory={() => {
+          setHistoryOpen(true);
+          apiFetch("/api/vrt/runs")
+            .then((res) => (res.ok ? res.json() : []))
+            .then((rows) => setRuns(rows as { id: string; createdAt: string }[]))
+            .catch(() => undefined);
+        }}
       />
 
       {selectedCell && (
@@ -410,6 +421,60 @@ export function MatrixCanvas({
         </Suspense>
       )}
 
+      {historyOpen && (
+        <div
+          className="cul-panel"
+          style={{
+            position: "absolute",
+            left: 16,
+            top: 76,
+            width: 320,
+            maxHeight: "60vh",
+            overflow: "auto",
+            zIndex: 25,
+          }}
+        >
+          <div className="cul-panel-header">
+            <span>{t("toolbar.history")}</span>
+            <button
+              className="cul-icon-btn"
+              style={{ marginLeft: "auto" }}
+              onClick={() => setHistoryOpen(false)}
+              aria-label={t("design.close")}
+            >
+              <X size={14} />
+            </button>
+          </div>
+          <div style={{ padding: 8, display: "grid", gap: 4 }}>
+            {runs.length === 0 && (
+              <p className="cul-hint" style={{ margin: 0 }}>
+                —
+              </p>
+            )}
+            {runs.map((run) => (
+              <button
+                key={run.id}
+                className="cul-btn"
+                style={{ fontSize: 11, justifyContent: "space-between" }}
+                onClick={() => {
+                  apiFetch(`/api/vrt/runs/${run.id}`)
+                    .then((res) => (res.ok ? res.json() : []))
+                    .then((rows) =>
+                      setRunDetail({
+                        id: run.id,
+                        changed: (rows as { changed: boolean }[]).filter((r) => r.changed).length,
+                      }),
+                    )
+                    .catch(() => undefined);
+                }}
+              >
+                <span>{run.createdAt}</span>
+                <span>{runDetail?.id === run.id ? `${runDetail.changed} changed` : ""}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <DesignPanel canvas={canvas} cells={cells} />
       <MarksPanel canvas={canvas} />
     </div>

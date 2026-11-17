@@ -32,6 +32,7 @@ export interface ToolbarProps {
   onRunVrt: () => void;
   onRunAudit: () => void;
   onOpenDocument?: () => void;
+  onHistory?: () => void;
 }
 
 export function Toolbar(props: ToolbarProps) {
@@ -120,9 +121,9 @@ export function Toolbar(props: ToolbarProps) {
         >
           <ScanSearch size={12} /> {t("toolbar.audit")}
         </button>
-        <a className="cul-btn" href="/history">
+        <button className="cul-btn" onClick={props.onHistory}>
           <History size={12} /> {t("toolbar.history")}
-        </a>
+        </button>
         <button
           className="cul-btn"
           style={{ fontSize: 11 }}

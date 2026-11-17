@@ -122,6 +122,9 @@ function Shell({ appName, bridgeToken }: { appName: string; bridgeToken: string 
 
   const handleCanvas = useCallback((next: GpuCanvasApi | null) => setCanvas(next), []);
   const handleSelection = useCallback((ids: string[]) => setSelection(ids), []);
+  useEffect(() => {
+    (window as Window & { __culSelection?: string[] }).__culSelection = selection;
+  }, [selection]);
 
   const insert = useCallback(
     (node: DocNode) => {

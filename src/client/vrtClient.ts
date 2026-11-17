@@ -45,7 +45,7 @@ async function blobToImageData(blob: Blob): Promise<ImageData> {
 }
 
 async function postJson(url: string, body: unknown): Promise<Record<string, unknown>> {
-  const res = await fetch(url, {
+  const res = await apiFetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
@@ -126,7 +126,7 @@ export async function runVrtCheck(
       canvas.setEffect(element, null);
       const after = await canvas.snapshot(element, { scale: 2 });
       onProgress?.({ done, total: cells.length, phase: "capture" });
-      const res = await fetch(
+      const res = await apiFetch(
         `/api/snapshots/baseline?componentId=${encodeURIComponent(cell.componentId)}&cellKey=${encodeURIComponent(cell.cellKey)}`,
       );
       if (res.status === 404) {

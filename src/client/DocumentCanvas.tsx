@@ -168,6 +168,7 @@ function DocEditorBridge({
   const canvas = useGpuCanvas();
   const live = useRef<string[]>([]);
   const attempted = useRef<string>("");
+  const pushUntil = useRef(0);
   const { set } = useEditor({
     trigger: "click",
     color: "#8b5cf6",
@@ -183,6 +184,10 @@ function DocEditorBridge({
     },
     onChange: (layers) => {
       const ids = layers.map((layer) => docIdOf(layer) ?? "").filter(Boolean);
+      // editor.set() can echo an empty selection for freshly mounted layers;
+      // never let that echo clobber a selection the app just pushed
+      if (ids.length === 0 && Date.now() < pushUntil.current) return;
+      pushUntil.current = 0;
       live.current = ids;
       attempted.current = ids.join(",");
       onSelection(ids);
@@ -203,8 +208,13 @@ function DocEditorBridge({
   useEffect(() => {
     if (!canvas || !set) return;
     const key = selection.join(",");
+    console.debug(
+      "[dbg] effect2",
+      JSON.stringify({ live: live.current, key, attempted: attempted.current }),
+    );
     if (live.current.join(",") === key || attempted.current === key) return;
     attempted.current = key;
+    pushUntil.current = Date.now() + 600;
     live.current = selection;
     const layers = selection
       .map((id) => canvas.surface.querySelector(`[data-docnode="${id}"]`))

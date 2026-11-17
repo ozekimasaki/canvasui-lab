@@ -70,7 +70,7 @@ export function DesignPanel({
       const links = (await linksRes.json()) as { nodeId: string; r2Key: string }[];
       for (const link of links) options.push({ label: `figma:${link.nodeId}`, r2Key: link.r2Key });
     }
-    const penRes = await fetch(
+    const penRes = await apiFetch(
       "/api/snapshots/history?componentId=pen%3Ademo&cellKey=pen%3Ademo%3Adocument",
     );
     if (penRes.ok) {
