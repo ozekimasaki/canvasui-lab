@@ -68,7 +68,7 @@ function Row({
           padding: "3px 8px",
           paddingLeft: 8 + depth * 14,
           cursor: "default",
-          background: selected ? "var(--cul-accent-soft, rgba(139,92,246,0.15))" : undefined,
+          background: selected ? "var(--cul-accent-soft)" : undefined,
           borderRadius: 4,
           fontSize: 12,
         }}

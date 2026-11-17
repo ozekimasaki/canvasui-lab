@@ -220,7 +220,6 @@ export function ChatPanel({
             </div>
             <button
               className="cul-btn cul-btn-primary"
-              style={{ fontSize: 11 }}
               onClick={() => void confirmAction(action)}
               disabled={busy}
             >
@@ -239,7 +238,6 @@ export function ChatPanel({
       >
         <button
           className="cul-btn"
-          style={{ fontSize: 11 }}
           onClick={() => void heal()}
           disabled={busy}
           title="Self-heal selection (max 3 iterations)"

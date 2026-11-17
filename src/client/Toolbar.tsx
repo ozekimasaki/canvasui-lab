@@ -41,12 +41,7 @@ export function Toolbar(props: ToolbarProps) {
     <div className="cul-toolbar">
       <strong className="cul-title">{props.appName}</strong>
       {props.onOpenDocument && (
-        <button
-          className="cul-btn"
-          style={{ fontSize: 11, padding: "2px 8px" }}
-          onClick={props.onOpenDocument}
-          title={t("mode.document.tip")}
-        >
+        <button className="cul-btn" onClick={props.onOpenDocument} title={t("mode.document.tip")}>
           {t("mode.document")}
         </button>
       )}
@@ -124,11 +119,7 @@ export function Toolbar(props: ToolbarProps) {
         <button className="cul-btn" onClick={props.onHistory}>
           <History size={12} /> {t("toolbar.history")}
         </button>
-        <button
-          className="cul-btn"
-          style={{ fontSize: 11 }}
-          onClick={() => setLang(lang === "ja" ? "en" : "ja")}
-        >
+        <button className="cul-btn" onClick={() => setLang(lang === "ja" ? "en" : "ja")}>
           {t("lang.toggle")}
         </button>
       </div>

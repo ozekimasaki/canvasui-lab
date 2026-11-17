@@ -29,7 +29,7 @@
   --chrome-solid: #ffffff;
   --chrome-border: #00000014;
   --chrome-fg: #1a1d21;
-  --chrome-muted: #6b7280;
+  --chrome-muted: #5f6570;
   --chrome-btn-bg: #00000008;
   --chrome-btn-hover: #00000012;
   --chrome-input: #00000008;
@@ -46,7 +46,7 @@
     --chrome-solid: #12151a;
     --chrome-border: #ffffff14;
     --chrome-fg: #e6e8eb;
-    --chrome-muted: #8b929c;
+    --chrome-muted: #a6adb8;
     --chrome-btn-bg: #ffffff0d;
     --chrome-btn-hover: #ffffff1a;
     --chrome-input: #ffffff0a;
@@ -63,7 +63,7 @@
   --chrome-solid: #ffffff;
   --chrome-border: #00000014;
   --chrome-fg: #1a1d21;
-  --chrome-muted: #6b7280;
+  --chrome-muted: #5f6570;
   --chrome-btn-bg: #00000008;
   --chrome-btn-hover: #00000012;
   --chrome-input: #00000008;
@@ -79,7 +79,7 @@
   --chrome-solid: #12151a;
   --chrome-border: #ffffff14;
   --chrome-fg: #e6e8eb;
-  --chrome-muted: #8b929c;
+  --chrome-muted: #a6adb8;
   --chrome-btn-bg: #ffffff0d;
   --chrome-btn-hover: #ffffff1a;
   --chrome-input: #ffffff0a;
@@ -263,12 +263,12 @@ body {
   cursor: not-allowed;
 }
 .cul-btn-primary {
-  background: #4f46e5;
-  border-color: #4f46e5;
+  background: var(--cul-accent);
+  border-color: var(--cul-accent);
   color: #fff;
 }
 .cul-btn-primary:hover:not(:disabled) {
-  background: #4338ca;
+  background: var(--cul-accent-hover);
 }
 
 .cul-icon-btn {
@@ -744,4 +744,62 @@ body {
 .cul-textarea:focus-visible {
   outline: 2px solid var(--cul-accent, #8b5cf6);
   outline-offset: 1px;
+}
+
+/* unified chrome tokens + button system (single accent, two sizes) */
+:root {
+  --cul-accent: #8b5cf6;
+  --cul-accent-hover: #7c3aed;
+  --cul-accent-soft: #8b5cf61f;
+  --cul-bg: var(--chrome-bg);
+  --cul-surface: var(--chrome-solid);
+  --cul-surface2: var(--chrome-btn-bg);
+  --cul-border: var(--chrome-border);
+  --cul-fg: var(--chrome-fg);
+  --cul-muted: var(--chrome-muted);
+  --cul-btn-bg: var(--chrome-btn-bg);
+  --cul-btn-hover: var(--chrome-btn-hover);
+}
+.cul-btn {
+  height: 32px;
+  padding: 0 12px;
+  font-size: 12px;
+  border-radius: 8px;
+}
+.cul-btn-sm {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 11px;
+  border-radius: 6px;
+}
+.cul-btn-ghost {
+  border-color: transparent;
+  background: transparent;
+}
+.cul-icon-btn-sm {
+  width: 24px;
+  height: 24px;
+}
+.cul-btn[aria-pressed="true"],
+.cul-btn[aria-selected="true"],
+.cul-icon-btn[aria-pressed="true"] {
+  background: var(--cul-accent-soft);
+  color: var(--cul-accent);
+  border-color: transparent;
+}
+.cul-input-field,
+.cul-select {
+  height: 32px;
+  font-size: 12px;
+}
+.cul-textarea {
+  font-size: 12px;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
 }

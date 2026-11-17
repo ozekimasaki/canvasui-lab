@@ -63,7 +63,6 @@ function ToastRow({ item, onDone }: { item: ToastItem; onDone: () => void }) {
       {item.action && (
         <button
           className="cul-btn"
-          style={{ fontSize: 11, padding: "2px 8px" }}
           onClick={() => {
             item.action?.run();
             onDone();

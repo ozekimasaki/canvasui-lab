@@ -52,8 +52,8 @@ export function ToolRail({ tool, setTool }: { tool: Tool; setTool: (t: Tool) => 
           style={
             tool === value
               ? {
-                  background: "var(--cul-accent-soft, rgba(139,92,246,0.15))",
-                  color: "var(--cul-accent, #8b5cf6)",
+                  background: "var(--cul-accent-soft)",
+                  color: "var(--cul-accent)",
                 }
               : undefined
           }

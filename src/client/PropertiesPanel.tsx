@@ -135,14 +135,12 @@ export function PropertiesPanel({
             ))}
             <button
               className="cul-btn"
-              style={{ fontSize: 10, padding: "2px 6px" }}
               onClick={() => dispatch({ type: "distribute", ids: selection, axis: "h" })}
             >
               {t("align.distH")}
             </button>
             <button
               className="cul-btn"
-              style={{ fontSize: 10, padding: "2px 6px" }}
               onClick={() => dispatch({ type: "distribute", ids: selection, axis: "v" })}
             >
               {t("align.distV")}
@@ -159,13 +157,9 @@ export function PropertiesPanel({
                   key={String(dir)}
                   className="cul-btn"
                   style={{
-                    fontSize: 10,
-                    padding: "2px 8px",
                     flex: 1,
                     background:
-                      (node.flex?.dir ?? null) === dir
-                        ? "var(--cul-accent-soft, rgba(139,92,246,0.15))"
-                        : undefined,
+                      (node.flex?.dir ?? null) === dir ? "var(--cul-accent-soft)" : undefined,
                   }}
                   onClick={() =>
                     set({
@@ -372,11 +366,7 @@ export function PropertiesPanel({
                 </select>
               </label>
             ))}
-            <button
-              className="cul-btn"
-              style={{ fontSize: 11 }}
-              onClick={() => onEditSource(spec.filePath)}
-            >
+            <button className="cul-btn" onClick={() => onEditSource(spec.filePath)}>
               <Code2 size={12} /> Monaco
             </button>
           </div>
@@ -393,12 +383,7 @@ export function PropertiesPanel({
               onChange={(e) => set({ className: e.target.value }, false)}
               onBlur={() => set({ className: node.className })}
             />
-            <button
-              className="cul-btn"
-              style={{ fontSize: 11 }}
-              onClick={() => void writeClass()}
-              disabled={!spec}
-            >
+            <button className="cul-btn" onClick={() => void writeClass()} disabled={!spec}>
               <PenLine size={12} /> {t("props.writeSource")}
             </button>
           </div>
@@ -406,18 +391,10 @@ export function PropertiesPanel({
       )}
       <Section title={t("props.export")}>
         <div style={{ display: "flex", gap: 6 }}>
-          <button
-            className="cul-btn"
-            style={{ fontSize: 11, flex: 1 }}
-            onClick={() => void exportPng()}
-          >
+          <button className="cul-btn" style={{ flex: 1 }} onClick={() => void exportPng()}>
             <Download size={12} /> {t("props.png")}
           </button>
-          <button
-            className="cul-btn"
-            style={{ fontSize: 11, flex: 1 }}
-            onClick={() => void exportHtml()}
-          >
+          <button className="cul-btn" style={{ flex: 1 }} onClick={() => void exportHtml()}>
             <Code2 size={12} /> {t("props.html")}
           </button>
         </div>

@@ -455,7 +455,7 @@ export function MatrixCanvas({
               <button
                 key={run.id}
                 className="cul-btn"
-                style={{ fontSize: 11, justifyContent: "space-between" }}
+                style={{ justifyContent: "space-between" }}
                 onClick={() => {
                   apiFetch(`/api/vrt/runs/${run.id}`)
                     .then((res) => (res.ok ? res.json() : []))

@@ -571,12 +571,7 @@ function Shell({ appName, bridgeToken }: { appName: string; bridgeToken: string 
               <button
                 key={tab}
                 className="cul-btn"
-                style={{
-                  fontSize: 11,
-                  padding: "2px 8px",
-                  background:
-                    leftTab === tab ? "var(--cul-accent-soft, rgba(139,92,246,0.15))" : undefined,
-                }}
+                aria-pressed={leftTab === tab}
                 onClick={() => setLeftTab(tab)}
               >
                 {t(tab === "layers" ? "panel.layers" : "panel.assets")}
@@ -625,12 +620,7 @@ function Shell({ appName, bridgeToken }: { appName: string; bridgeToken: string 
             <button
               key={tab}
               className="cul-btn"
-              style={{
-                fontSize: 11,
-                padding: "2px 6px",
-                background:
-                  rightTab === tab ? "var(--cul-accent-soft, rgba(139,92,246,0.15))" : undefined,
-              }}
+              aria-pressed={rightTab === tab}
               onClick={() => setRightTab(tab)}
             >
               {t(
@@ -675,7 +665,7 @@ function Shell({ appName, bridgeToken }: { appName: string; bridgeToken: string 
               <button
                 key={spec.id}
                 className="cul-btn"
-                style={{ fontSize: 11, justifyContent: "flex-start" }}
+                style={{ justifyContent: "flex-start" }}
                 onClick={() => setEditorFile(spec.filePath)}
               >
                 {spec.title}
@@ -685,7 +675,7 @@ function Shell({ appName, bridgeToken }: { appName: string; bridgeToken: string 
               <button
                 key={filePath}
                 className="cul-btn"
-                style={{ fontSize: 11, justifyContent: "flex-start" }}
+                style={{ justifyContent: "flex-start" }}
                 onClick={() => setEditorFile(filePath)}
               >
                 {filePath.replace("src/components/imported/", "")}
@@ -913,7 +903,7 @@ function Palette({
           <button
             key={a.label}
             className="cul-btn"
-            style={{ width: "100%", justifyContent: "flex-start", fontSize: 12 }}
+            style={{ width: "100%", justifyContent: "flex-start" }}
             onClick={() => {
               onClose();
               a.run();

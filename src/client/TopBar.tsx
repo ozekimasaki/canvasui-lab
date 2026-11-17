@@ -103,7 +103,7 @@ export function TopBar({
               padding: "4px 12px",
               fontSize: 12,
               cursor: "pointer",
-              background: mode === m ? "var(--cul-accent, #8b5cf6)" : "transparent",
+              background: mode === m ? "var(--cul-accent)" : "transparent",
               color: mode === m ? "#fff" : "inherit",
             }}
           >
@@ -134,12 +134,7 @@ export function TopBar({
         <button className="cul-icon-btn" onClick={onZoomOut} aria-label="Zoom out">
           <ZoomOut size={14} />
         </button>
-        <button
-          className="cul-btn"
-          style={{ fontSize: 11, padding: "2px 6px", minWidth: 48 }}
-          onClick={onZoom100}
-          title={t("zoom100")}
-        >
+        <button className="cul-btn" onClick={onZoom100} title={t("zoom100")}>
           {Math.round(zoom * 100)}%
         </button>
         <button className="cul-icon-btn" onClick={onZoomIn} aria-label="Zoom in">
@@ -149,12 +144,7 @@ export function TopBar({
           <Maximize size={14} />
         </button>
         <span style={{ width: 1, height: 16, background: "var(--cul-border, #e2e4e8)" }} />
-        <button
-          className="cul-btn"
-          style={{ fontSize: 11, padding: "2px 8px" }}
-          onClick={onChat}
-          title={t("ai.open")}
-        >
+        <button className="cul-btn" onClick={onChat} title={t("ai.open")}>
           <Bot size={13} /> AI
         </button>
         <button
@@ -162,7 +152,7 @@ export function TopBar({
           onClick={onToggleSync}
           title={t("status.sync")}
           aria-pressed={syncEnabled}
-          style={syncEnabled ? { color: "var(--cul-accent, #8b5cf6)" } : undefined}
+          style={syncEnabled ? { color: "var(--cul-accent)" } : undefined}
         >
           {syncEnabled ? <Wifi size={14} /> : <WifiOff size={14} />}
         </button>
@@ -180,11 +170,7 @@ export function TopBar({
             <Moon size={14} />
           )}
         </button>
-        <button
-          className="cul-btn"
-          style={{ fontSize: 11, padding: "2px 8px" }}
-          onClick={() => setLang(lang === "ja" ? "en" : "ja")}
-        >
+        <button className="cul-btn" onClick={() => setLang(lang === "ja" ? "en" : "ja")}>
           {t("lang.toggle")}
         </button>
       </div>
