@@ -17,7 +17,7 @@ export async function run(ctx: Ctx): Promise<void> {
   // tool switching
   const tools: [string, number, string][] = [
     ["v", 86, "移動 (V)"],
-    ["h", 72, "_hand (H)"],
+    ["h", 72, "手のひら (H)"],
     ["f", 70, "フレーム (F)"],
     ["t", 84, "テキスト (T)"],
     ["c", 67, "コメント (C)"],

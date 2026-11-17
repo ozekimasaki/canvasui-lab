@@ -1,6 +1,6 @@
 import { apiFetch } from "./api";
 import { diffImages, toBlob, type GpuCanvas } from "gpucanvas";
-import { ChevronDown, Frame, Palette, PenTool, X } from "lucide-react";
+import { ChevronDown, Frame, Palette, PenTool, SwatchBook, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { MatrixCell } from "../domain/matrix";
 import { designs } from "virtual:pen-designs";
@@ -224,7 +224,7 @@ export function DesignPanel({
       }
     >
       <button className="cul-panel-header" onClick={() => setOpen(!open)}>
-        <PenTool size={14} />
+        <SwatchBook size={14} />
         <span>{t("design.title")}</span>
         <ChevronDown
           size={14}

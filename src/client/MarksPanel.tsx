@@ -1,5 +1,14 @@
 import { apiFetch } from "./api";
-import { Bot, ChevronDown, MapPin, RefreshCw, StickyNote, Trash2, User } from "lucide-react";
+import {
+  Bot,
+  ChevronDown,
+  MapPin,
+  MessagesSquare,
+  RefreshCw,
+  StickyNote,
+  Trash2,
+  User,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import type { GpuCanvas } from "gpucanvas";
 import { loadAndDrawMarks, removeDrawing, type MarkRow } from "./auditClient";
@@ -54,7 +63,7 @@ export function MarksPanel({ canvas, embedded }: { canvas: GpuCanvas | null; emb
       }
     >
       <button className="cul-panel-header" onClick={() => setOpen(!open)}>
-        <MapPin size={14} />
+        <MessagesSquare size={14} />
         <span>{t("marks.title")}</span>
         <span className="cul-badge">{marks.length}</span>
         <ChevronDown

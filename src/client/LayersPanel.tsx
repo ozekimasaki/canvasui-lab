@@ -1,12 +1,13 @@
-import { Circle, Eye, EyeOff, Frame, Package, Square, Type } from "lucide-react";
+import { Circle, Component, Eye, EyeOff, Frame, Spline, Square, Type } from "lucide-react";
 import { useState } from "react";
 import type { DocAction, DocNode, Document } from "../domain/document";
 import { useI18n } from "./i18n";
 
 function iconFor(node: DocNode) {
   if (node.kind === "frame") return Frame;
-  if (node.kind === "instance") return Package;
+  if (node.kind === "instance") return Component;
   if (node.kind === "text") return Type;
+  if (node.kind === "svg") return Spline;
   if (node.kind === "shape" && node.shape === "ellipse") return Circle;
   return Square;
 }

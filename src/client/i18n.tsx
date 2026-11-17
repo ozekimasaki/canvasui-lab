@@ -8,7 +8,7 @@ const dict = {
     "mode.document.tip": "Figma のように自由にレイアウトを編集",
     "mode.catalog.tip": "全コンポーネント×状態のマトリクスと VRT",
     "tool.move": "移動 (V)",
-    "tool.hand": "_hand (H)",
+    "tool.hand": "手のひら (H)",
     "tool.frame": "フレーム (F)",
     "tool.text": "テキスト (T)",
     "tool.comment": "コメント (C)",

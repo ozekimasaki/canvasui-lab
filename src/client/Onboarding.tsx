@@ -1,4 +1,4 @@
-import { FileUp, LayoutGrid, Package } from "lucide-react";
+import { FileUp, LayoutGrid, Component } from "lucide-react";
 import { useI18n } from "./i18n";
 
 export function Onboarding({
@@ -15,7 +15,7 @@ export function Onboarding({
   const { t } = useI18n();
   const cards = [
     { icon: FileUp, label: t("onboard.fig"), run: onImportFig, primary: true },
-    { icon: Package, label: t("onboard.insert"), run: onInsert, primary: false },
+    { icon: Component, label: t("onboard.insert"), run: onInsert, primary: false },
     { icon: LayoutGrid, label: t("onboard.catalog"), run: onCatalog, primary: false },
   ];
   return (
