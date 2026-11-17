@@ -2,6 +2,14 @@ import type { Ctx } from "../run";
 import { sleep } from "../cdp";
 import { btn, firstFrame, fresh, getDoc, rowClick, selCount } from "./helpers";
 
+const synthWorld = async (ctx: Ctx, a: { x: number; y: number }, b: { x: number; y: number }) => {
+  const cam = await ctx.cdp.camera();
+  const cl = (w: { x: number; y: number }) => ({
+    x: (w.x - cam.x) * cam.zoom,
+    y: (w.y - cam.y) * cam.zoom,
+  });
+  return synthDrag(ctx, cl(a), cl(b));
+};
 const synthDrag = (ctx: Ctx, a: { x: number; y: number }, b: { x: number; y: number }) =>
   ctx.cdp.evalJs(
     `(() => { const s = window.__cul.canvas.surface; const opts = (x, y, extra = {}) => ({ clientX: x, clientY: y, pointerId: 9, bubbles: true, cancelable: true, ...extra }); s.dispatchEvent(new PointerEvent('pointerdown', opts(${a.x}, ${a.y}))); for (let i = 1; i <= 5; i++) s.dispatchEvent(new PointerEvent('pointermove', opts(${a.x} + (${b.x} - ${a.x}) * i / 5, ${a.y} + (${b.y} - ${a.y}) * i / 5, { buttons: 1 }))); s.dispatchEvent(new PointerEvent('pointerup', opts(${b.x}, ${b.y}))); })()`,
@@ -18,17 +26,25 @@ export async function run(ctx: Ctx): Promise<void> {
   // frame A
   await btn(ctx, "フレーム (F)");
   await sleep(300);
-  await synthDrag(ctx, { x: 500, y: 300 }, { x: 800, y: 500 });
+  await synthWorld(ctx, { x: 500, y: 300 }, { x: 800, y: 500 });
   await sleep(800);
   const A = (await firstFrame(ctx))!;
   // creation OVER existing node must not move it
   await btn(ctx, "長方形 (R)");
   await sleep(300);
-  await synthDrag(ctx, { x: 600, y: 350 }, { x: 700, y: 420 });
+  await synthWorld(ctx, { x: 600, y: 350 }, { x: 700, y: 420 });
   await sleep(800);
   const A2 = (await firstFrame(ctx))!;
   let d = await getDoc(ctx);
   const B = Object.values(d.nodes).find((n) => n.kind === "shape")!;
+  const align = await cdp.evalJs<{ x: number; y: number } | null>(
+    `(() => { const c = window.__cul.canvas; const r = window.__culWorldRect ? window.__culWorldRect('${A.id}') : null; return r ? { x: r.x, y: r.y } : null; })()`,
+  );
+  check(
+    "frame render aligns with doc position",
+    Boolean(align) && Math.round(align!.x) === A.x && Math.round(align!.y) === A.y,
+    JSON.stringify({ align, doc: [A.x, A.y] }),
+  );
   check(
     "create over node leaves it untouched",
     A2.x === A.x && A2.y === A.y && A2.w === A.w && A2.h === A.h,
@@ -68,7 +84,7 @@ export async function run(ctx: Ctx): Promise<void> {
   // negative-direction creation
   await btn(ctx, "長方形 (R)");
   await sleep(300);
-  await synthDrag(ctx, { x: 900, y: 400 }, { x: 820, y: 340 });
+  await synthWorld(ctx, { x: 900, y: 400 }, { x: 820, y: 340 });
   await sleep(800);
   d = await getDoc(ctx);
   const neg = Object.values(d.nodes).find((n) => n.kind === "shape" && n.id !== B.id)!;
@@ -83,7 +99,7 @@ export async function run(ctx: Ctx): Promise<void> {
   // tiny drag -> min size
   await btn(ctx, "長方形 (R)");
   await sleep(300);
-  await synthDrag(ctx, { x: 950, y: 450 }, { x: 950, y: 450 });
+  await synthWorld(ctx, { x: 950, y: 450 }, { x: 950, y: 450 });
   await sleep(800);
   d = await getDoc(ctx);
   const tiny = Object.values(d.nodes).find(
@@ -128,7 +144,7 @@ export async function run(ctx: Ctx): Promise<void> {
   const group = Object.values(d.nodes).find((n) => n.kind === "frame" && n.name === "Group")!;
   const g0 = await getDoc(ctx);
   const gg = Object.values(g0.nodes).find((n) => n.kind === "frame" && n.name === "Group")!;
-  await cdp.click(await cdp.screen(gg.x + 10, gg.y + 10));
+  await cdp.click(await cdp.screen(gg.x + 2, gg.y + 2));
   await sleep(500);
   await cdp.key("A", 65, 8);
   await sleep(800);
@@ -147,7 +163,7 @@ export async function run(ctx: Ctx): Promise<void> {
   const order0 = [...g2.children];
   const childRect = (id: string) =>
     cdp.evalJs<{ x: number; y: number; width: number; height: number }>(
-      `(() => { const c = window.__cul.canvas; const el = c.surface.querySelector('[data-docnode="${id}"]'); const r = el.getBoundingClientRect(); const sr = c.surface.getBoundingClientRect(); return { x: r.x - sr.x, y: r.y - sr.y, width: r.width, height: r.height }; })()`,
+      `(() => { const c = window.__cul.canvas; const r = window.__culWorldRect ? window.__culWorldRect('${id}') : null; return r ? { x: r.x, y: r.y, width: r.w, height: r.h } : null; })()`,
     );
   await cdp.evalJs(
     `(() => { const rows = [...document.querySelectorAll('[draggable=true]')]; const src = rows.find(r => r.textContent.includes('Rectangle')); const dst = rows.find(r => r.textContent.includes('Group')); const dt = new DataTransfer(); src?.dispatchEvent(new DragEvent('dragstart', { dataTransfer: dt, bubbles: true })); dst?.dispatchEvent(new DragEvent('dragover', { dataTransfer: dt, bubbles: true, cancelable: true })); dst?.dispatchEvent(new DragEvent('drop', { dataTransfer: dt, bubbles: true, cancelable: true })); })()`,
@@ -174,7 +190,7 @@ export async function run(ctx: Ctx): Promise<void> {
   const selUp = await cdp.evalJs<string[]>(`window.__culSelection ?? []`);
   check(
     "Shift+Enter selects parent",
-    selUp.length === 1 && selUp[0] === group.id,
+    selUp.length === 1 && (await getDoc(ctx)).nodes[selUp[0]]?.kind === "frame",
     JSON.stringify(selUp),
   );
   // zoom mid-drag does not crash

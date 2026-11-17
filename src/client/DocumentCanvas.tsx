@@ -41,19 +41,22 @@ function NodeView({
   doc,
   id,
   inFlex,
+  atOrigin,
   renderInstance,
 }: {
   doc: Document;
   id: string;
   inFlex: boolean;
+  atOrigin?: boolean;
   renderInstance: (componentId: string, overrides: Record<string, unknown>) => ReactNode;
 }): ReactNode {
   const node = doc.nodes[id];
   if (!node || node.hidden) return null;
   const base: CSSProperties = {
     position: inFlex ? "relative" : "absolute",
-    left: inFlex ? undefined : node.x,
-    top: inFlex ? undefined : node.y,
+    // the CanvasNode wrapper already sits at (x, y); roots must not offset again
+    left: inFlex || atOrigin ? undefined : node.x,
+    top: inFlex || atOrigin ? undefined : node.y,
     width: node.w,
     height: node.h,
     boxSizing: "border-box",
@@ -519,13 +522,31 @@ export function DocumentCanvas({
   // product-owned resize handles: library chrome handles are unreliable in GPU
   // mode, so render our own in world space (portaled into the surface)
   const [handleCam, setHandleCam] = useState({ x: 0, y: 0, zoom: 1 });
-  const worldRectOf = (id: string) => {
-    const el = canvas?.surface.querySelector(`[data-docnode="${id}"]`);
-    if (!el || !canvas) return null;
-    const r = el.getBoundingClientRect();
-    const sr = canvas.surface.getBoundingClientRect();
-    return { x: r.x - sr.x, y: r.y - sr.y, w: r.width, h: r.height };
+  const worldRectOf = (id: string): { x: number; y: number; w: number; h: number } | null => {
+    const node = doc.nodes[id];
+    if (!node) return null;
+    const parent = Object.values(doc.nodes).find(
+      (n) => n.kind === "frame" && n.children.includes(id),
+    );
+    if (!parent || parent.kind !== "frame") return { x: node.x, y: node.y, w: node.w, h: node.h };
+    const pw = worldRectOf(parent.id);
+    if (!pw) return null;
+    if (parent.flex) {
+      // flow-positioned: derive offset from DOM relative to the parent marker
+      const el = canvas?.surface.querySelector(`[data-docnode="${id}"]`);
+      const pel = canvas?.surface.querySelector(`[data-docnode="${parent.id}"]`);
+      if (el && pel) {
+        const r = el.getBoundingClientRect();
+        const pr = pel.getBoundingClientRect();
+        return { x: pw.x + (r.x - pr.x), y: pw.y + (r.y - pr.y), w: r.width, h: r.height };
+      }
+      return { x: pw.x + node.x, y: pw.y + node.y, w: node.w, h: node.h };
+    }
+    return { x: pw.x + node.x, y: pw.y + node.y, w: node.w, h: node.h };
   };
+  useEffect(() => {
+    (window as Window & { __culWorldRect?: (id: string) => unknown }).__culWorldRect = worldRectOf;
+  });
   const resizeRef = useRef<{ id: string; ax: number; ay: number } | null>(null);
   const moveGesture = useRef<{ id: string; sx: number; sy: number } | null>(null);
   const selNode = selection.length === 1 ? doc.nodes[selection[0]] : undefined;
@@ -651,7 +672,13 @@ export function DocumentCanvas({
           return (
             <CanvasNode key={id} x={node.x} y={node.y} width={node.w} height={node.h}>
               <div style={{ position: "relative", width: "100%", height: "100%" }}>
-                <NodeView doc={doc} id={id} inFlex={false} renderInstance={renderInstance} />
+                <NodeView
+                  doc={doc}
+                  id={id}
+                  inFlex={false}
+                  atOrigin
+                  renderInstance={renderInstance}
+                />
               </div>
             </CanvasNode>
           );

@@ -37,6 +37,10 @@ export async function fresh(ctx: Ctx, mode: "document" | "catalog" = "document")
   );
   await resetDoc(ctx);
   await ctx.cdp.reload();
+  await ctx.cdp.evalJs(`window.__cul.canvas.setCamera({ x: 0, y: 0, zoom: 1 })`);
+  await ctx.cdp.evalJs(
+    `document.activeElement instanceof HTMLElement && document.activeElement.blur()`,
+  );
 }
 
 export const btn = (ctx: Ctx, label: string) =>
