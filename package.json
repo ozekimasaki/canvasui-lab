@@ -18,7 +18,8 @@
     "electron:build": "electron-vite build && electron-builder --mac dmg",
     "electron:preview": "electron-vite preview",
     "mcp:stdio": "tsx scripts/mcp-stdio.ts",
-    "postinstall": "electron-builder install-app-deps"
+    "postinstall": "electron-builder install-app-deps",
+    "test:e2e": "tsx scripts/e2e/run.ts"
   },
   "dependencies": {
     "@babel/parser": "^8.1.2",

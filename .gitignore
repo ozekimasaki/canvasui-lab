@@ -10,3 +10,4 @@ dist
 .DS_Store
 out
 release
+scripts/e2e/artifacts
