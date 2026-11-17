@@ -41,6 +41,8 @@ export type ShortcutAction =
   | "cheat"
   | "cut"
   | "paste"
+  | "enterChild"
+  | "enterParent"
   | "toolV"
   | "toolH"
   | "toolF"
@@ -67,6 +69,8 @@ export const SHORTCUT_TABLE: { keys: string; action: ShortcutAction }[] = [
   { keys: "Cmd+A", action: "selectAll" },
   { keys: "Esc", action: "clear" },
   { keys: "Cmd+D", action: "duplicate" },
+  { keys: "Enter", action: "enterChild" },
+  { keys: "Shift+Enter", action: "enterParent" },
   { keys: "Cmd+X", action: "cut" },
   { keys: "Cmd+V", action: "paste" },
   { keys: "Del", action: "delete" },
@@ -113,6 +117,7 @@ export function useShortcuts(onAction: (action: ShortcutAction) => void, enabled
       let action: ShortcutAction | null = null;
       if (mod && lower === "z") action = event.shiftKey ? "redo" : "undo";
       else if (mod && lower === "d") action = "duplicate";
+      else if (event.key === "Enter") action = event.shiftKey ? "enterParent" : "enterChild";
       else if (mod && lower === "x") action = "cut";
       else if (mod && lower === "v") action = "paste";
       else if (mod && lower === "a") action = "selectAll";
@@ -217,6 +222,8 @@ const ACTION_LABELS: Record<ShortcutAction, [string, string]> = {
   cheat: ["チートシート", "Cheat sheet"],
   cut: ["カット", "Cut"],
   paste: ["ペースト", "Paste"],
+  enterChild: ["子へ移動", "Enter child"],
+  enterParent: ["親へ移動", "Enter parent"],
   toolV: ["移動ツール", "Move tool"],
   toolH: ["ハンドツール", "Hand tool"],
   toolF: ["フレームツール", "Frame tool"],

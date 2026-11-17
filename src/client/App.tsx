@@ -141,16 +141,46 @@ function Shell({ appName, bridgeToken }: { appName: string; bridgeToken: string 
   );
   const transform = useCallback(
     (id: string, rect: { x: number; y: number; w: number; h: number }, kind: "move" | "resize") => {
+      console.debug(
+        "[dbg] transform",
+        id,
+        kind,
+        Math.round(rect.x),
+        Math.round(rect.y),
+        Math.round(rect.w),
+        Math.round(rect.h),
+      );
       const node = docRef.current.nodes[id];
       if (!node) return;
-      if (kind === "move")
+      if (kind === "move") {
+        const parent = Object.values(docRef.current.nodes).find(
+          (n) => n.kind === "frame" && n.children.includes(id),
+        );
+        if (parent && parent.kind === "frame" && parent.flex && canvas) {
+          // flex children are flow-positioned: dragging reorders instead of moving
+          const horizontal = parent.flex.dir === "h";
+          const center = horizontal ? rect.x + rect.w / 2 : rect.y + rect.h / 2;
+          let index = 0;
+          for (const sib of parent.children) {
+            if (sib === id) continue;
+            const el = canvas.surface.querySelector(`[data-docnode="${sib}"]`);
+            if (!el) continue;
+            // fallback DOM is laid out in world units (camera not applied)
+            const r = el.getBoundingClientRect();
+            const sr = canvas.surface.getBoundingClientRect();
+            const sc = horizontal ? r.x - sr.x + r.width / 2 : r.y - sr.y + r.height / 2;
+            if (sc < center) index++;
+          }
+          dispatch({ type: "reorder", id, parentId: parent.id, index }, { history: false });
+          return;
+        }
         dispatch(
           { type: "move", ids: [id], dx: rect.x - node.x, dy: rect.y - node.y },
           { history: false },
         );
-      else dispatch({ type: "resize", id, w: rect.w, h: rect.h }, { history: false });
+      } else dispatch({ type: "resize", id, w: rect.w, h: rect.h }, { history: false });
     },
-    [dispatch],
+    [dispatch, canvas],
   );
 
   const deleteSelection = useCallback(() => {
@@ -304,6 +334,19 @@ function Shell({ appName, bridgeToken }: { appName: string; bridgeToken: string 
         case "selectAll":
           setSelection(current.roots);
           break;
+        case "enterChild": {
+          const frame = ids.map((id) => current.nodes[id]).find((n) => n?.kind === "frame");
+          if (frame && frame.kind === "frame" && frame.children[0])
+            setSelection([frame.children[0]]);
+          break;
+        }
+        case "enterParent": {
+          const parent = Object.values(current.nodes).find(
+            (n) => n.kind === "frame" && n.children.includes(ids[0]),
+          );
+          if (parent) setSelection([parent.id]);
+          break;
+        }
         case "clear":
           setSelection([]);
           setSearchOpen(false);

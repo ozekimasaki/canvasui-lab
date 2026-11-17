@@ -170,11 +170,12 @@ function DocEditorBridge({
   const attempted = useRef<string>("");
   const pushUntil = useRef(0);
   const { set } = useEditor({
+    // creation tools must not let the editor select/transform existing nodes
+    // (its capture-phase pointerdown commits selection regardless of pick)
     trigger: "click",
     color: "#8b5cf6",
     marquee: tool !== "H",
     pick: (element) => {
-      if (tool !== "V") return [];
       const host = element.closest("[data-docnode]");
       return host ? [host] : [];
     },
@@ -259,6 +260,10 @@ export function DocumentCanvas({
 }: DocumentCanvasProps) {
   const { t } = useI18n();
   const [canvas, setCanvas] = useState<GpuCanvasApi | null>(null);
+  const handleReady = useCallback((ready: GpuCanvasApi) => {
+    (window as Window & { __cul?: { canvas: GpuCanvasApi } }).__cul = { canvas: ready };
+    setCanvas(ready);
+  }, []);
   const [draft, setDraft] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(
     null,
   );
@@ -293,12 +298,47 @@ export function DocumentCanvas({
 
   useEffect(() => {
     if (!canvas) return;
-    const surface = canvas.surface;
     const toWorld = (event: { clientX: number; clientY: number }) => {
-      const rect = surface.getBoundingClientRect();
+      const rect = canvas.surface.getBoundingClientRect();
       return canvas.screenToWorld({ x: event.clientX - rect.left, y: event.clientY - rect.top });
     };
+    const moveRef = moveGesture;
     const onDown = (event: PointerEvent) => {
+      if (!canvas.surface.contains(event.target as Node)) return;
+      if (tool === "V" && event.button === 0) {
+        if ((event.target as Element).closest("[data-cul-handle]")) return;
+        const wp = toWorld(event);
+        const hit = [...canvas.surface.querySelectorAll("[data-docnode]")]
+          .map((el) => {
+            const r = worldRectOf(el.getAttribute("data-docnode")!);
+            return r ? { id: el.getAttribute("data-docnode")!, ...r } : null;
+          })
+          .filter(
+            (n): n is NonNullable<typeof n> =>
+              Boolean(n) &&
+              !docRef.current.nodes[n.id]?.hidden &&
+              wp.x >= n.x &&
+              wp.x <= n.x + n.w &&
+              wp.y >= n.y &&
+              wp.y <= n.y + n.h,
+          )
+          .sort((a, b) => a.w * a.h - b.w * b.h)[0];
+        // flex children are flow-positioned: library transforms cannot move
+        // them, so run a product-owned reorder gesture instead
+        const parent = hit
+          ? Object.values(docRef.current.nodes).find(
+              (n) => n.kind === "frame" && n.children.includes(hit.id),
+            )
+          : undefined;
+        if (hit && parent && parent.kind === "frame" && parent.flex) {
+          event.stopPropagation();
+          onSelection([hit.id]);
+          onTransformStart(hit.id);
+          moveRef.current = { id: hit.id, sx: wp.x, sy: wp.y };
+          return;
+        }
+        return;
+      }
       // creation tools must not let the background pan controller move the
       // camera mid-gesture, or screenToWorld freezes and drafts collapse
       if (tool === "F" || tool === "R" || tool === "O" || tool === "T" || tool === "C") {
@@ -308,11 +348,6 @@ export function DocumentCanvas({
         const p = toWorld(event);
         draftRef.current = { x0: p.x, y0: p.y, x1: p.x, y1: p.y };
         setDraft(draftRef.current);
-        try {
-          surface.setPointerCapture(event.pointerId);
-        } catch {
-          // synthetic pointers (E2E) have no active pointer to capture
-        }
       } else if (tool === "T") {
         const p = toWorld(event);
         onInsert({
@@ -332,7 +367,7 @@ export function DocumentCanvas({
         setTool("V");
       } else if (tool === "C") {
         const p = toWorld(event);
-        const rect = surface.getBoundingClientRect();
+        const rect = canvas.surface.getBoundingClientRect();
         setComment({
           x: p.x,
           y: p.y,
@@ -343,14 +378,33 @@ export function DocumentCanvas({
       }
     };
     const onMove = (event: PointerEvent) => {
+      const m = moveRef.current;
+      if (m && tool === "V") {
+        const p = toWorld(event);
+        const node = docRef.current.nodes[m.id];
+        if (node)
+          onTransform(
+            m.id,
+            { x: node.x + (p.x - m.sx), y: node.y + (p.y - m.sy), w: node.w, h: node.h },
+            "move",
+          );
+        return;
+      }
       if (!draftRef.current) return;
       const p = toWorld(event);
       draftRef.current = { ...draftRef.current, x1: p.x, y1: p.y };
       setDraft(draftRef.current);
     };
     const onUp = () => {
+      moveRef.current = null;
       const d = draftRef.current;
       if (!d) return;
+      if (tool !== "F" && tool !== "R" && tool !== "O") {
+        // tool switched mid-gesture: cancel the draft instead of committing
+        draftRef.current = null;
+        setDraft(null);
+        return;
+      }
       draftRef.current = null;
       setDraft(null);
       const x = Math.min(d.x0, d.x1);
@@ -388,9 +442,11 @@ export function DocumentCanvas({
       setTool("V");
     };
     const onDragOver = (event: DragEvent) => {
+      if (!canvas.surface.contains(event.target as Node)) return;
       if (event.dataTransfer?.types.includes("application/x-cul-component")) event.preventDefault();
     };
     const onDrop = (event: DragEvent) => {
+      if (!canvas.surface.contains(event.target as Node)) return;
       const componentId = event.dataTransfer?.getData("application/x-cul-component");
       if (!componentId) return;
       event.preventDefault();
@@ -408,19 +464,162 @@ export function DocumentCanvas({
         overrides: {},
       });
     };
-    surface.addEventListener("pointerdown", onDown, true);
-    surface.addEventListener("pointermove", onMove);
-    surface.addEventListener("pointerup", onUp);
-    surface.addEventListener("dragover", onDragOver);
-    surface.addEventListener("drop", onDrop);
-    return () => {
-      surface.removeEventListener("pointerdown", onDown, true);
-      surface.removeEventListener("pointermove", onMove);
-      surface.removeEventListener("pointerup", onUp);
-      surface.removeEventListener("dragover", onDragOver);
-      surface.removeEventListener("drop", onDrop);
+    // window capture: overlay chrome must not swallow creation gestures
+    const onDblClick = (event: MouseEvent) => {
+      if (tool !== "V" || !canvas.surface.contains(event.target as Node)) return;
+      const wp = toWorld(event);
+      const hit = [...canvas.surface.querySelectorAll("[data-docnode]")]
+        .map((el) => {
+          const r = worldRectOf(el.getAttribute("data-docnode")!);
+          return r ? { id: el.getAttribute("data-docnode")!, ...r } : null;
+        })
+        .filter(
+          (n): n is NonNullable<typeof n> =>
+            Boolean(n) &&
+            !docRef.current.nodes[n.id]?.hidden &&
+            wp.x >= n.x &&
+            wp.x <= n.x + n.w &&
+            wp.y >= n.y &&
+            wp.y <= n.y + n.h,
+        )
+        .sort((a, b) => a.w * a.h - b.w * b.h)[0];
+      if (hit) onSelection([hit.id]);
     };
-  }, [canvas, tool, chrome, onInsert, setTool, specs]);
+    window.addEventListener("pointerdown", onDown, true);
+    window.addEventListener("pointermove", onMove, true);
+    window.addEventListener("pointerup", onUp, true);
+    window.addEventListener("dblclick", onDblClick, true);
+    window.addEventListener("dragover", onDragOver, true);
+    window.addEventListener("drop", onDrop, true);
+    return () => {
+      window.removeEventListener("pointerdown", onDown, true);
+      window.removeEventListener("pointermove", onMove, true);
+      window.removeEventListener("pointerup", onUp, true);
+      window.removeEventListener("dblclick", onDblClick, true);
+      window.removeEventListener("dragover", onDragOver, true);
+      window.removeEventListener("drop", onDrop, true);
+    };
+  }, [
+    canvas,
+    tool,
+    chrome,
+    onInsert,
+    setTool,
+    specs,
+    selection,
+    onSelection,
+    onTransform,
+    onTransformStart,
+  ]);
+
+  // product-owned resize handles: library chrome handles are unreliable in GPU
+  // mode, so render our own in world space (portaled into the surface)
+  const [handleCam, setHandleCam] = useState({ x: 0, y: 0, zoom: 1 });
+  const worldRectOf = (id: string) => {
+    const el = canvas?.surface.querySelector(`[data-docnode="${id}"]`);
+    if (!el || !canvas) return null;
+    const r = el.getBoundingClientRect();
+    const sr = canvas.surface.getBoundingClientRect();
+    return { x: r.x - sr.x, y: r.y - sr.y, w: r.width, h: r.height };
+  };
+  const resizeRef = useRef<{ id: string; ax: number; ay: number } | null>(null);
+  const moveGesture = useRef<{ id: string; sx: number; sy: number } | null>(null);
+  const selNode = selection.length === 1 ? doc.nodes[selection[0]] : undefined;
+  useEffect(() => {
+    if (!canvas || !selNode || tool !== "V") return;
+    setHandleCam(canvas.getCamera());
+    const timer = setInterval(() => setHandleCam(canvas.getCamera()), 300);
+    return () => clearInterval(timer);
+  }, [canvas, selNode, tool]);
+  useEffect(() => {
+    const move = (event: PointerEvent) => {
+      const r = resizeRef.current;
+      if (!r || !canvas) return;
+      const sr = canvas.surface.getBoundingClientRect();
+      const cam = canvas.getCamera();
+      const wx = (event.clientX - sr.x) / cam.zoom + cam.x;
+      const wy = (event.clientY - sr.y) / cam.zoom + cam.y;
+      const w = Math.max(8, Math.abs(wx - r.ax));
+      const h = Math.max(8, Math.abs(wy - r.ay));
+      const x = wx < r.ax ? r.ax - w : r.ax;
+      const y = wy < r.ay ? r.ay - h : r.ay;
+      onTransform(r.id, { x, y, w, h }, "resize");
+    };
+    const up = () => {
+      resizeRef.current = null;
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+    };
+  }, [canvas, onTransform]);
+  const selRect = selNode ? (worldRectOf(selNode.id) ?? selNode) : undefined;
+  const handles =
+    selNode && selRect && tool === "V" && canvas ? (
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 5 }}>
+        {(
+          [
+            [
+              "nw",
+              selRect.x,
+              selRect.y,
+              selRect.x + selRect.w,
+              selRect.y + selRect.h,
+              "nwse-resize",
+            ],
+            [
+              "ne",
+              selRect.x + selRect.w,
+              selRect.y,
+              selRect.x,
+              selRect.y + selRect.h,
+              "nesw-resize",
+            ],
+            [
+              "sw",
+              selRect.x,
+              selRect.y + selRect.h,
+              selRect.x + selRect.w,
+              selRect.y,
+              "nesw-resize",
+            ],
+            [
+              "se",
+              selRect.x + selRect.w,
+              selRect.y + selRect.h,
+              selRect.x,
+              selRect.y,
+              "nwse-resize",
+            ],
+          ] as const
+        ).map(([key, cx, cy, ax, ay, cursor]) => (
+          <div
+            key={key}
+            data-cul-handle={key}
+            onPointerDown={(event) => {
+              event.stopPropagation();
+              event.preventDefault();
+              onTransformStart(selNode.id);
+              resizeRef.current = { id: selNode.id, ax, ay };
+            }}
+            style={{
+              position: "absolute",
+              left: (cx - handleCam.x) * handleCam.zoom - 4,
+              top: (cy - handleCam.y) * handleCam.zoom - 4,
+              width: 8,
+              height: 8,
+              background: "#fff",
+              border: "1px solid #8b5cf6",
+              borderRadius: 2,
+              pointerEvents: "auto",
+              cursor,
+            }}
+          />
+        ))}
+      </div>
+    ) : null;
 
   const cursor =
     tool === "H"
@@ -433,13 +632,7 @@ export function DocumentCanvas({
 
   return (
     <div style={{ position: "absolute", inset: 0, cursor }}>
-      <GpuCanvas
-        style={{ width: "100%", height: "100%" }}
-        onReady={(ready) => {
-          (window as Window & { __cul?: { canvas: GpuCanvasApi } }).__cul = { canvas: ready };
-          setCanvas(ready);
-        }}
-      >
+      <GpuCanvas style={{ width: "100%", height: "100%" }} onReady={handleReady}>
         <DocEditorBridge
           doc={doc}
           tool={tool}
@@ -477,6 +670,7 @@ export function DocumentCanvas({
           </CanvasNode>
         )}
       </GpuCanvas>
+      {handles}
       {doc.roots.length === 0 && !draft && (
         <div
           className="cul-hint"

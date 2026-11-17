@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { createServer } from "node:net";
 import { Cdp, sleep } from "./cdp";
 import * as documentSpec from "./specs/document";
+import * as gesturesSpec from "./specs/gestures";
 import * as panelsSpec from "./specs/panels";
 import * as catalogSpec from "./specs/catalog";
 import * as layoutSpec from "./specs/layout";
@@ -90,7 +91,7 @@ async function main() {
     await cdp.send("Emulation.setFocusEmulationEnabled", { enabled: true });
     await cdp.send("Runtime.enable", {});
     cdp.consoleSink = (line) => {
-      if (line.startsWith("[dbg]") || line.startsWith("error")) console.log(line);
+      if (line.includes("[dbg]") || line.startsWith("error")) console.log(line);
     };
     const ctx: Ctx = {
       cdp,
@@ -109,6 +110,7 @@ async function main() {
     };
     const specs: [string, { run: (ctx: Ctx) => Promise<void> }][] = [
       ["document", documentSpec],
+      ["gestures", gesturesSpec],
       ["panels", panelsSpec],
       ["catalog", catalogSpec],
       ["layout", layoutSpec],
